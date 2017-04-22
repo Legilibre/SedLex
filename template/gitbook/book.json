@@ -1,0 +1,7 @@
+{
+    "language": "fr",
+    "plugins": [
+        "heading-anchors"
+    ],
+    "title": "{{ title }}"
+}

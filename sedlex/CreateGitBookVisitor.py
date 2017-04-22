@@ -8,18 +8,22 @@ import duralex.node_type
 import duralex.diff
 
 from bs4 import BeautifulSoup
+from jinja2 import Template
 
 import os
 import subprocess
 import tempfile
+from distutils.dir_util import copy_tree
 
 class CreateGitBookVisitor(AbstractVisitor):
     def __init__(self, args):
-        self.directory = args.gitbook
+        self.gitbook_dir = args.gitbook
+        self.tmp_dir = tempfile.mkdtemp()
+
         super(CreateGitBookVisitor, self).__init__()
 
     def write_file(self, filename, data):
-        f = open(self.directory + '/' + filename, 'w')
+        f = open(self.tmp_dir + '/' + filename, 'w')
         f.write(data.encode('utf-8'))
         f.close()
 
@@ -88,7 +92,7 @@ class CreateGitBookVisitor(AbstractVisitor):
 
         if 'parent' not in node:
             process = subprocess.Popen(
-                'gitbook init ' + self.directory,
+                'gitbook init ' + self.tmp_dir,
                 shell=True,
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,
@@ -149,31 +153,38 @@ class CreateGitBookVisitor(AbstractVisitor):
         super(CreateGitBookVisitor, self).visit_node(node)
 
         if 'parent' not in node:
-            self.write_file('book.json', '{"language":"fr", "plugins": ["heading-anchors"], "title": "' + self.get_book_title(node) + '"}')
-            self.css()
+            self.template_file(
+                'book.json',
+                {'title': self.get_book_title(node)}
+            )
+            self.template_file(
+                'styles/website.css',
+                {}
+            )
             self.write_file('SUMMARY.md', summary)
             self.write_file('README.md', readme)
 
             process = subprocess.Popen(
                 'gitbook install',
-                cwd=self.directory,
+                cwd=self.tmp_dir,
                 shell=True,
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
             out, err = process.communicate()
-            print(out, err)
 
             process = subprocess.Popen(
                 'gitbook build',
-                cwd=self.directory,
+                cwd=self.tmp_dir,
                 shell=True,
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
             out, err = process.communicate()
+
+            print(copy_tree(os.path.join(self.tmp_dir, '_book'), self.gitbook_dir))
 
     def get_book_title(self, root_node):
         title = root_node['type'].title()
@@ -294,16 +305,16 @@ class CreateGitBookVisitor(AbstractVisitor):
 
         return edits
 
-    def css(self):
-        if not os.path.exists(self.directory + '/styles'):
-            os.makedirs(self.directory + '/styles')
-        self.write_file(
-            'styles/website.css',
-            ('.gitbook-link, .divider {display:none!important}'
-            '.diff .diff-delete {color:#a33;text-decoration:line-through;background:#ffeaea}'
-            '.diff .diff-insert {background:#eaffea;}'
-            '.diff {border:1px solid rgba(0,0,0,.15);margin-bottom:20px;border-radius:3px}'
-            '.diff .diff-content {padding:10px;background:#fcfcfc}'
-            '.diff .diff-filename {background:#f6f6f6;padding:10px;border-bottom:1px solid rgba(0,0,0,.15)}'
-            '.diff .diff-filename:before {font:normal normal normal 14px/1 FontAwesome;content:"\\f0f6";padding-right:10px}')
-        )
+    def template_file(self, template, values):
+        f = open(os.path.join('./template/gitbook', template), 'r')
+        t = Template(f.read())
+        f.close()
+
+        filename = os.path.join(self.tmp_dir, template)
+        path = os.path.dirname(filename)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        f = open(filename, 'w')
+        data = f.write(t.render(values).encode('utf-8'))
+        f.truncate()
+        f.close()

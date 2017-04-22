@@ -1,0 +1,37 @@
+.divider,
+.gitbook-link {
+  display : none!important;
+}
+
+.diff .diff-delete {
+  color           : #a33;
+  background      : #ffeaea;
+  text-decoration : line-through;
+}
+
+.diff .diff-insert {
+  background : #eaffea;
+}
+
+.diff {
+  margin-bottom : 20px;
+  border        : 1px solid rgba(0,0,0,.15);
+  border-radius : 3px;
+}
+
+.diff .diff-content {
+  padding    : 10px;
+  background : #fcfcfc;
+}
+
+.diff .diff-filename {
+  padding       : 10px;
+  border-bottom : 1px solid rgba(0,0,0,.15);
+  background    : #f6f6f6;
+}
+
+.diff .diff-filename:before {
+  content       : "\\f0f6";
+  padding-right : 10px;
+  font          : normal normal normal 14px/1 FontAwesome;
+}
