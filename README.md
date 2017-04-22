@@ -113,3 +113,79 @@ or it can be piped to apply the patch directly:
 ```bash
 duralex --file bill.html | ./bin/sedlex --diff | jq -r '.. | .diff? | strings' | patch -p0
 ```
+
+## Git Integration
+
+SedLex can automagically apply each `edit` node into an actual Git commit by passing the `--git-commit` flag.
+
+SedLex can also generate meaningful commit messages by passing the `--commit-message` flag.
+For example, the following `edit` node:
+
+```json
+{
+  "children": [
+    {
+      "children": [
+        {
+          "type": "quote",
+          "words": "autorisé"
+        }
+      ],
+      "type": "words"
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "type": "quote",
+                      "words": "défendu"
+                    }
+                  ],
+                  "type": "words-reference"
+                }
+              ],
+              "order": 1,
+              "type": "sentence-reference"
+            }
+          ],
+          "filename": "data/code des instruments monétaires et des médailles/9.md",
+          "id": "9",
+          "type": "article-reference"
+        }
+      ],
+      "codeName": "code des instruments monétaires et des médailles",
+      "type": "code-reference"
+    }
+  ],
+  "editType": "replace",
+  "type": "edit"
+}
+```
+
+will generate the following commit message:
+
+> Remplacer les mots "défendu" dans l'article 9 par les mots "autorisé" (Article 1).
+
+Each commit message is added as a `commitMessage` field on the corresponding edit node:
+
+```json
+{
+  "type": "edit",
+  "editType": "replace",
+  "commitMessage": "Remplacer les mots \"défendu\" dans l'article 9 par les mots \"autorisé\" (Article 1).",
+  "children": [
+      ...
+  ]
+}
+```
+
+## GitHub Integration
+
+SedLex can automagically create a GitHub issue for each `article` node by passing the `--github-repository` and
+`--github-token` flags. Such issue will also be referenced by the commit message of all the `edit` nodes that are
+descendants of the corresponding `article` node. Thus, each edit/commit will reference the corresponding article/issue.
