@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+# -*- coding=utf-8 -*-
+
+import codecs
+import os
+import json
+import sys
+import argparse
+import urllib
+
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '..'))
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '../src'))
+
+from duralex.AddParentVisitor import AddParentVisitor
+from duralex.DeleteParentVisitor import DeleteParentVisitor
+
+from sedlex.AddCommitMessageVisitor import AddCommitMessageVisitor
+from sedlex.AddArcheoLexFilenameVisitor import AddArcheoLexFilenameVisitor
+from sedlex.AddDiffVisitor import AddDiffVisitor
+from sedlex.AddGitHubIssueVisitor import AddGitHubIssueVisitor
+from sedlex.GitCommitVisitor import GitCommitVisitor
+from sedlex.CreateGitBookVisitor import CreateGitBookVisitor
+from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
+
+def handle_data(data, args):
+    ast = json.loads(data)
+
+    AddParentVisitor().visit(ast)
+
+    if args.commit_message:
+        AddCommitMessageVisitor().visit(ast)
+
+    if args.diff:
+        AddArcheoLexFilenameVisitor().visit(ast)
+        AddDiffVisitor().visit(ast)
+
+    if args.github_token and args.github_repository:
+        AddGitHubIssueVisitor(args).visit(ast)
+
+    if args.git_commit:
+        GitCommitVisitor().visit(ast)
+
+    if args.gitbook:
+        CreateGitBookVisitor(args).visit(ast)
+
+    if args.cocorico_app_id and args.cocorico_secret:
+        AddCocoricoVoteVisitor(args).visit(ast)
+
+    if not args.quiet:
+        DeleteParentVisitor().visit(ast)
+        json_data = json.dumps(ast, sort_keys=True, indent=2, ensure_ascii=False).encode('utf-8')
+        sys.stdout.write(json_data)
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog='sedlex')
+    parser.add_argument('--file', help='the path of the bill to process', type=argparse.FileType('r'), default='-')
+    parser.add_argument('--url', help='the URL of the bill to process')
+    parser.add_argument('--quiet', action='store_true', help='no stdout output')
+    parser.add_argument('--diff', action='store_true', help='compute a diff for each edit')
+    parser.add_argument('--commit-message', action='store_true', help='generate a commit message for each edit')
+    parser.add_argument('--git-commit', action='store_true', help='git commit each edit')
+    parser.add_argument('--github-token', help='the GitHub API token')
+    parser.add_argument('--github-repository', help='the target GitHub repository')
+    parser.add_argument('--gitbook', help='create a GitBook')
+    parser.add_argument('--cocorico-app-id', help='the Cocorico App ID to create the vote')
+    parser.add_argument('--cocorico-secret', help='the Cocorico secret to create the vote')
+
+    args = parser.parse_args()
+
+    if args.url:
+        data = urllib.urlopen(args.url).read()
+    elif args.file:
+        data = args.file.read()
+
+    try:
+        data = data.decode('utf8')
+    except:
+        try:
+            data = data.decode('iso-8859-1')
+        except:
+            pass
+
+    handle_data(data, args)
+
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
