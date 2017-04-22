@@ -8,7 +8,7 @@ import duralex.node_type
 import duralex.diff
 
 from bs4 import BeautifulSoup
-from jinja2 import Template
+import jinja2
 
 import os
 import subprocess
@@ -78,7 +78,7 @@ class CreateGitBookVisitor(AbstractVisitor):
                     'title': self.get_article_commit_title(edit_node),
                     # remove the " ({reference list})" from the commit message since its already printed
                     # in the header above
-                    'description': re.sub(r' \(.*\)', '', edit_node['commitMessage']) if 'commitMessage' in edit_node else None,
+                    'description': re.sub(r' \(.*\)', '', edit_node['commitMessage'].splitlines()[0]) if 'commitMessage' in edit_node else None,
                     'diff': self.get_article_commit_diff(edit_node, target_title, target_href),
                     'target': {
                         'title': target_title,
@@ -121,6 +121,7 @@ class CreateGitBookVisitor(AbstractVisitor):
             modified_texts = self.get_modified_texts(edits)
             template_data = {
                 'title': self.get_book_title(node),
+                'url': node['url'],
                 'type': node['type'],
                 'modified': modified_texts,
                 'articles': articles
@@ -301,7 +302,7 @@ class CreateGitBookVisitor(AbstractVisitor):
 
     def template_file(self, template, values, out=None):
         f = open(os.path.join('./template/gitbook', template), 'r')
-        t = Template(f.read().decode('utf-8'))
+        t = jinja2.Environment(loader=jinja2.FileSystemLoader('./template/gitbook')).from_string(f.read().decode('utf-8'))
         f.close()
 
         filename = os.path.join(self.tmp_dir, out if out else template)

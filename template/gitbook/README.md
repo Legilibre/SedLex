@@ -1,6 +1,6 @@
 # {{ title | title }}
 
-[Texte original]({{ url }})
+[<i class="fa fa-external-link" aria-hidden="true"></i> Texte original]({{ url }})
 
 ## <i class="fa fa-bookmark-o"></i> Articles
 
