@@ -27,142 +27,139 @@ class CreateGitBookVisitor(AbstractVisitor):
         f.write(data.encode('utf-8'))
         f.close()
 
-    def visit_node(self, node):
-        if 'type' in node and node['type'] == 'article':
-            title = 'Article ' + str(node['order'])
-            filename = title.replace(' ', '_')
-            body = [
-                '# ' + self.icon('bookmark-o') + ' ' + get_root(node)['type'].title() + ', ' + title,
-                '## ' + self.icon('file-text-o') + ' Texte',
-                node['content'].replace('\n', '\n\n'),
-                '## ' + self.icon('pencil-square-o') + ' Suivi des modifications'
-            ]
+    def get_article_commit_title(self, node):
+        ancestors = get_node_ancestors(node)
+        messages = []
+        for ancestor in ancestors:
+            if 'type' not in ancestor:
+                continue;
+            if ancestor['type'] == 'article':
+                messages.append('Article ' + str(ancestor['order']))
+                if 'githubIssue' in node:
+                    link = ancestor['githubIssue']
+            if ancestor['type'] == 'bill-header1' and 'implicit' not in ancestor:
+                messages.append(int_to_roman(ancestor['order']))
+            if ancestor['type'] == 'bill-header2':
+                messages.append(unicode(ancestor['order']) + u'°')
+        return ', '.join(messages[::-1])
 
-            if 'githubIssue' in node:
-                body.append(u'[' + self.icon('code-fork') + u' Voir dans le système de gestion de versions (expert)](' + node['githubIssue'] + ')')
-
-            edits = filter_nodes(node, lambda n: 'type' in n and n['type'] == 'edit')
-            for edit in edits:
-                ancestors = get_node_ancestors(edit)
-                messages = []
-                link = ''
-                for ancestor in ancestors:
-                    if 'type' not in ancestor:
-                        continue;
-
-                    if ancestor['type'] == 'article':
-                        messages.append('Article ' + str(ancestor['order']))
-                        if 'githubIssue' in node:
-                            link = ancestor['githubIssue']
-                    if ancestor['type'] == 'bill-header1' and 'implicit' not in ancestor:
-                        messages.append(int_to_roman(ancestor['order']))
-                    if ancestor['type'] == 'bill-header2':
-                        messages.append(unicode(ancestor['order']) + u'°')
-                body.append('### ' + ', '.join(messages[::-1]))
-                if 'commitMessage' in edit:
-                    edit_desc = edit['commitMessage'].splitlines()[0]
-                    # remove the " ({reference list})" from the commit message since its already printed
-                    # in the header above
-                    edit_desc = re.sub(r' \(.*\)', '', edit_desc)
-                    body.append(edit_desc)
-                if 'htmlDiff' in edit:
-                    soup = BeautifulSoup(edit['htmlDiff'], "html5lib")
-                    filename_div = soup.find('div', {'class': 'diff-filename'})
-                    article_ref = filter_nodes(edit, lambda n: n['type'] == 'article-reference')[0]
-                    target_title, target_href = self.get_deep_link(self.get_edit_target_nodes(article_ref))
-                    a_tag = soup.new_tag('a', href=target_href)
-                    a_tag.string = target_title
-                    filename_div.string = ''
-                    filename_div.append(a_tag)
-                    body.append(unicode(soup.body.div))
-                elif 'diff' in edit:
-                    process = subprocess.Popen(
-                        'diff2html -i stdin -d word -o stdout --su hidden -s line',
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stdin=subprocess.PIPE,
-                        stderr=subprocess.PIPE
-                    )
-                    out, err = process.communicate(input=edit['diff'].encode('utf-8') + '\n')
-                    soup = BeautifulSoup(out, "html5lib")
-                    body.append(str(list(soup.find_all('style'))[0]))
-                    body.append(unicode(soup.find('div', {'id': 'diff'})))
-
-            self.write_file(title.replace(' ', '_') + '.md', '\n\n'.join(body))
-
-        if 'parent' not in node:
+    def get_article_commit_diff(self, edit, target_title, target_href):
+        if 'htmlDiff' in edit:
+            soup = BeautifulSoup(edit['htmlDiff'], "html5lib")
+            filename_div = soup.find('div', {'class': 'diff-filename'})
+            a_tag = soup.new_tag('a', href=target_href)
+            a_tag.string = target_title
+            filename_div.string = ''
+            filename_div.append(a_tag)
+            return unicode(soup.body.div)
+        elif 'diff' in edit:
             process = subprocess.Popen(
-                'gitbook init ' + self.tmp_dir,
+                'diff2html -i stdin -d word -o stdout --su hidden -s line',
                 shell=True,
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            out, err = process.communicate()
+            out, err = process.communicate(input=edit['diff'].encode('utf-8') + '\n')
+            soup = BeautifulSoup(out, "html5lib")
+            return (str(list(soup.find_all('style'))[0]) + '\n\n'
+                + unicode(soup.find('div', {'id': 'diff'})))
 
-            summary = '# Summary\n\n'
-            summary += '## ' + node['type'].title() + '\n\n'
-            readme = '# ' + self.get_book_title(node) + '\n\n'
-            if 'url' in node and node['url']:
-                readme += '[Texte original](' + node['url'] + ')\n\n'
-            readme += '## ' + self.icon('bookmark-o') + ' Articles\n\n'
+    def get_articles(self, node):
+        articles = []
+        article_nodes = filter_nodes(node, lambda n: n['type'] == 'article')
+        for article_node in article_nodes:
+            edit_nodes = filter_nodes(article_node, lambda n: 'type' in n and n['type'] == 'edit')
+            commits = []
+            for edit_node in edit_nodes:
+                article_ref = filter_nodes(edit_node, lambda n: n['type'] == 'article-reference')[0]
+                target_title, target_href = self.get_deep_link(self.get_edit_target_nodes(article_ref))
+                commits.append({
+                    'title': self.get_article_commit_title(edit_node),
+                    # remove the " ({reference list})" from the commit message since its already printed
+                    # in the header above
+                    'description': re.sub(r' \(.*\)', '', edit_node['commitMessage']) if 'commitMessage' in edit_node else None,
+                    'diff': self.get_article_commit_diff(edit_node, target_title, target_href),
+                    'target': {
+                        'title': target_title,
+                        'link': target_href
+                    }
+                })
 
-            articles = filter_nodes(node, lambda n: 'type' in n and n['type'] == 'article')
-            for article in articles:
-                title = 'Article ' + str(article['order'])
-                filename = title.replace(' ', '_')
-                summary += '* [' + title + '](' + filename + '.md)\n'
-                readme += '* [' + title + '](' + filename + '.md)\n'
-            summary += '\n'
-            readme += '\n'
+            articles.append({
+                'order': article_node['order'],
+                'content': article_node['content'].replace('\n', '\n\n'),
+                'commits': commits,
+                'githubIssue': article_node['githubIssue'] if 'githubIssue' in article_node else None
+            })
+        return articles
 
-            modified = ''
-            modified += u'## ' + self.icon('file-text-o') + u' Textes modifiés\n\n'
-            edits = self.build_edit_matrix(node)
-            law_ids = set([i[0] for i in edits.keys()])
-            for law_id in law_ids:
-                law_edits = {k: v for k, v in edits.iteritems() if k[0] == law_id}
-                modified_files = []
-                for k, v in edits.iteritems():
-                    filename = law_id + '-' + k[1] + '.md'
-                    modified_files.append((k[1], u' * [Article ' + k[1] + '](' + filename + ')'))
-                    self.write_file(
-                        filename,
-                        self.get_modified_file_page(k[2], u'Loi n°' + law_id + u', Article ' + k[1], v)
-                    )
-                modified_files = [m[1] for m in sorted(modified_files, key=lambda x: x[0].replace('-', ' '))]
-                modified_law = '\n'.join(modified_files)
-                self.write_file(
-                    law_id + '.md',
-                    '# ' + self.icon('balance-scale') + u' Loi N°' + law_id + u'\n\n'
-                    + '## ' + self.icon('pencil-square-o') + u' Articles modifiés\n\n'
-                    + modified_law
-                )
-                modified += u'* [Loi n°' + law_id + '](' + law_id + '.md)\n' + modified_law
-            readme += modified
-            summary += modified
+    def merge_dicts(self, *dict_args):
+        """
+        Given any number of dicts, shallow copy and merge into a new dict,
+        precedence goes to key value pairs in latter dicts.
+        """
+        result = {}
+        for dictionary in dict_args:
+            result.update(dictionary)
+        return result
 
-            if 'cocoricoVote' in node:
-                readme += u'\n## ' + self.icon('envelope-o') + ' Vote\n\n'
-                readme += u'* [Voter](https://cocorico.cc)\n'
-                readme += u'* [Résultats du vote](https://cocorico.cc)\n'
-                summary += u'\n## Vote\n\n'
-                summary += u'* [Voter](https://cocorico.cc)\n'
-                summary += u'* [Résultats du vote](https://cocorico.cc)\n'
-
+    def visit_node(self, node):
         super(CreateGitBookVisitor, self).visit_node(node)
 
         if 'parent' not in node:
-            self.template_file(
-                'book.json',
-                {'title': self.get_book_title(node)}
-            )
-            self.template_file(
-                'styles/website.css',
-                {}
-            )
-            self.write_file('SUMMARY.md', summary)
-            self.write_file('README.md', readme)
+            # if 'cocoricoVote' in node:
+            #     readme += u'\n## ' + self.icon('envelope-o') + ' Vote\n\n'
+            #     readme += u'* [Voter](https://cocorico.cc)\n'
+            #     readme += u'* [Résultats du vote](https://cocorico.cc)\n'
+            #     summary += u'\n## Vote\n\n'
+            #     summary += u'* [Voter](https://cocorico.cc)\n'
+            #     summary += u'* [Résultats du vote](https://cocorico.cc)\n'
+
+            edits = self.build_edit_matrix(node)
+            articles = self.get_articles(node)
+            modified_texts = self.get_modified_texts(edits)
+            template_data = {
+                'title': self.get_book_title(node),
+                'type': node['type'],
+                'modified': modified_texts,
+                'articles': articles
+            }
+
+            self.template_file('book.json', template_data)
+            self.template_file('styles/website.css', template_data)
+            self.template_file('SUMMARY.md', template_data)
+            self.template_file('README.md', template_data)
+            current_article = 0
+            for article in articles:
+                self.template_file(
+                    'article.md',
+                    self.merge_dicts(template_data, {'current_article': current_article}),
+                    'article-' + str(article['order']) + '.md'
+                )
+                current_article += 1
+
+            current_article = 0
+            current_law = 0
+            for modified in modified_texts:
+                self.template_file(
+                    'law.md',
+                    self.merge_dicts(template_data, {
+                        'current_law': current_law,
+                    }),
+                    modified['law'] + '.md'
+                )
+                for article in modified['articles']:
+                    self.template_file(
+                        'text.md',
+                        self.merge_dicts(template_data, {
+                            'current_law': current_law,
+                            'current_article': current_article
+                        }),
+                        modified['law'] + '-' + article['id'] + '.md'
+                    )
+                    current_article += 1
+                current_law += 1
 
             process = subprocess.Popen(
                 'gitbook install',
@@ -184,7 +181,7 @@ class CreateGitBookVisitor(AbstractVisitor):
             )
             out, err = process.communicate()
 
-            print(copy_tree(os.path.join(self.tmp_dir, '_book'), self.gitbook_dir))
+            copy_tree(os.path.join(self.tmp_dir, '_book'), self.gitbook_dir)
 
     def get_book_title(self, root_node):
         title = root_node['type'].title()
@@ -193,36 +190,6 @@ class CreateGitBookVisitor(AbstractVisitor):
         if 'legislature' in root_node:
             title += ', ' + str(root_node['legislature']) + u'ème législature'
         return title
-
-    def get_modified_file_page(self, filename, title, edit_sources):
-        body = [
-            '# ' + self.icon('balance-scale') + ' ' + title,
-        ]
-
-        f = open(filename, 'r')
-        text = f.read().decode('utf-8')
-        original_text = text
-        f.close()
-
-        # all diffs are supposed to be applied in sequence
-        modif_links = []
-        for edit_source in edit_sources:
-            title, href = self.get_deep_link(edit_source)
-            modif_links.append('* [' + title + '](' + href + ')')
-            edit_refs = filter_nodes(edit_source[-1], lambda n: n['type'] == 'edit')
-            for edit_ref in edit_refs:
-                text = self.patch(text, edit_ref['diff'])
-
-        body.append('## ' + self.icon('file-text-o') + ' Texte')
-        body.append(duralex.diff.make_html_rich_diff(original_text, text))
-
-        body.append('## ' + self.icon('pencil-square-o') + ' Suivi des modifications')
-        body += modif_links
-
-        return '\n\n'.join(body)
-
-    def icon(self, name):
-        return '<i class="fa fa-' + name + '"></i>'
 
     def patch(self, original, unified_diff):
         fd, filename = input_file = tempfile.mkstemp()
@@ -242,11 +209,11 @@ class CreateGitBookVisitor(AbstractVisitor):
         title = []
         for node in nodes:
             if node['type'] == 'law-reference':
-                title.append(u'Loi n°' + node['lawId'])
+                title.append(u'Loi N°' + node['lawId'])
                 href.append(node['lawId'])
             elif node['type'] == 'article':
                 title.append(u'Article ' + str(node['order']))
-                href.append(u'Article_' + str(node['order']) + '.md#article-' + str(node['order']))
+                href.append(u'article-' + str(node['order']) + '.md#article-' + str(node['order']))
             elif node['type'] == 'article-reference':
                 title.append(u'Article ' + node['id'])
                 href.append(node['id'] + '.md')
@@ -289,9 +256,37 @@ class CreateGitBookVisitor(AbstractVisitor):
             key=lambda n: edit_source_types.index(n['type'])
         )
 
+    def get_modified_texts(self, edits):
+        modified = []
+        law_ids = set([i[0] for i in edits.keys()])
+        for law_id in law_ids:
+            law_edits = {k: v for k, v in edits.iteritems() if k[0] == law_id}
+            articles = []
+            for k, v in edits.iteritems():
+                commits = []
+
+                f = open(k[2], 'r')
+                text = f.read().decode('utf-8')
+                original_text = text
+                f.close()
+
+                for edit_source in v:
+                    title, href = self.get_deep_link(edit_source)
+                    commits.append({'title': title, 'link': href})
+                    edit_refs = filter_nodes(edit_source[-1], lambda n: n['type'] == 'edit')
+                    for edit_ref in edit_refs:
+                        text = self.patch(text, edit_ref['diff'])
+                articles.append({
+                    'id': k[1],
+                    'diff': duralex.diff.make_html_rich_diff(original_text, text),
+                    'commits': commits
+                })
+            articles = sorted(articles, key=lambda x: x['id'].replace('-', ' '))
+            modified.append({'law': law_id, 'articles': articles})
+        return modified
+
     def build_edit_matrix(self, node):
         edits = {}
-
         article_refs = filter_nodes(node, lambda n: 'type' in n and n['type'] == 'article-reference')
         for article_ref in article_refs:
             law_ref = filter(
@@ -302,19 +297,18 @@ class CreateGitBookVisitor(AbstractVisitor):
             if t not in edits:
                 edits[t] = []
             edits[t].append(self.get_edit_source_nodes(article_ref))
-
         return edits
 
-    def template_file(self, template, values):
+    def template_file(self, template, values, out=None):
         f = open(os.path.join('./template/gitbook', template), 'r')
-        t = Template(f.read())
+        t = Template(f.read().decode('utf-8'))
         f.close()
 
-        filename = os.path.join(self.tmp_dir, template)
+        filename = os.path.join(self.tmp_dir, out if out else template)
         path = os.path.dirname(filename)
         if not os.path.exists(path):
             os.makedirs(path)
         f = open(filename, 'w')
-        data = f.write(t.render(values).encode('utf-8'))
+        f.write(t.render(values).encode('utf-8'))
         f.truncate()
         f.close()

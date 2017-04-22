@@ -31,7 +31,7 @@
 }
 
 .diff .diff-filename:before {
-  content       : "\\f0f6";
+  content       : "\f0f6";
   padding-right : 10px;
   font          : normal normal normal 14px/1 FontAwesome;
 }
