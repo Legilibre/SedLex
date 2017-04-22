@@ -69,7 +69,7 @@ class AddCommitMessageVisitor(AbstractVisitor):
         edit_desc = ''
         if node['editType'] == 'delete':
             edit_desc = 'supprimer ' + ' '.join(self.ref_parts[::-1])
-        elif node['editType'] == 'edit':
+        elif node['editType'] == 'edit' or node['editType'] == 'replace':
             edit_desc = 'remplacer ' + ' '.join(self.ref_parts[::-1]) + ' par ' + ', '.join(self.def_parts)
         elif node['editType'] == 'add':
             edit_desc = 'ajouter ' + ' '.join(self.ref_parts[::-1])
