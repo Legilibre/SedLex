@@ -6,6 +6,8 @@
 
 ## <i class="fa fa-pencil-square-o"></i> Suivi des modifications
 
+[<i class="fa fa-code-fork"></i> Voir dans le système de gestion de versions (expert)]({{ articles[current_article].githubIssue }})
+
 {% for commit in articles[current_article].commits %}
 ### {{ commit.title }}
 
