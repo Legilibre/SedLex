@@ -8,7 +8,9 @@ import requests
 
 class AddCocoricoVoteVisitor(AbstractVisitor):
     def __init__(self, args):
-        self.url = 'https://local.cocorico.cc'
+        self.url = args.cocorico_url
+        if not self.url:
+            self.url = 'https://cocorico.cc'
 
         r = requests.post(
             self.url + '/api/oauth/token',
