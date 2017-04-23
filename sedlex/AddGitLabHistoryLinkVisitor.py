@@ -4,12 +4,12 @@ from AbstractVisitor import AbstractVisitor
 
 import os
 
-class AddGitLabArticleLinkVisitor(AbstractVisitor):
+class AddGitLabHistoryLinkVisitor(AbstractVisitor):
     def __init__(self, args):
         self.repo = args.gitlab_repository
         self.law_id = None
 
-        super(AddGitLabArticleLinkVisitor, self).__init__()
+        super(AddGitLabHistoryLinkVisitor, self).__init__()
 
     def visit_law_reference_node(self, node, post):
         if post:

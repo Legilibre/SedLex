@@ -2,12 +2,12 @@
 
 from AbstractVisitor import AbstractVisitor
 
-class AddGitHubArticleLinkVisitor(AbstractVisitor):
+class AddGitHubHistoryLinkVisitor(AbstractVisitor):
     def __init__(self, args):
         self.repo = args.github_repository
         self.law_id = None
 
-        super(AddGitHubArticleLinkVisitor, self).__init__()
+        super(AddGitHubHistoryLinkVisitor, self).__init__()
 
     def visit_law_reference_node(self, node, post):
         if post:

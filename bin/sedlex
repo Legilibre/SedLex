@@ -22,8 +22,8 @@ from sedlex.AddGitLabIssueVisitor import AddGitLabIssueVisitor
 from sedlex.GitCommitVisitor import GitCommitVisitor
 from sedlex.CreateGitBookVisitor import CreateGitBookVisitor
 from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
-from sedlex.AddGitHubArticleLinkVisitor import AddGitHubArticleLinkVisitor
-from sedlex.AddGitLabArticleLinkVisitor import AddGitLabArticleLinkVisitor
+from sedlex.AddGitHubHistoryLinkVisitor import AddGitHubHistoryLinkVisitor
+from sedlex.AddGitLabHistoryLinkVisitor import AddGitLabHistoryLinkVisitor
 
 def handle_data(data, args):
     ast = json.loads(data)
@@ -38,11 +38,11 @@ def handle_data(data, args):
         AddDiffVisitor().visit(ast)
 
     if args.github_token and args.github_repository:
-        AddGitHubArticleLinkVisitor(args).visit(ast)
+        AddGitHubHistoryLinkVisitor(args).visit(ast)
         AddGitHubIssueVisitor(args).visit(ast)
 
     if args.gitlab_token and args.gitlab_repository:
-        AddGitLabArticleLinkVisitor(args).visit(ast)
+        AddGitLabHistoryLinkVisitor(args).visit(ast)
         AddGitLabIssueVisitor(args).visit(ast)
 
     if args.git_commit:
