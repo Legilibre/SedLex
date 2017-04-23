@@ -18,3 +18,10 @@
 {%- endfor %}
 
 {%- endif %}
+
+{% if cocorico_vote is defined %}
+## Vote
+
+* [Voter](https://cocorico.cc/embed/vote-widget/{{ cocorico_vote }})
+* [Résultats du vote](https://cocorico.cc/ballot-box/{{ cocorico_vote }})
+{% endif %}
