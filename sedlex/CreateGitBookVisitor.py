@@ -19,6 +19,7 @@ class CreateGitBookVisitor(AbstractVisitor):
     def __init__(self, args):
         self.gitbook_dir = args.gitbook
         self.tmp_dir = tempfile.mkdtemp()
+        self.formats = args.gitbook_format
 
         super(CreateGitBookVisitor, self).__init__()
 
@@ -108,14 +109,6 @@ class CreateGitBookVisitor(AbstractVisitor):
         super(CreateGitBookVisitor, self).visit_node(node)
 
         if 'parent' not in node:
-            # if 'cocoricoVote' in node:
-            #     readme += u'\n## ' + self.icon('envelope-o') + ' Vote\n\n'
-            #     readme += u'* [Voter](https://cocorico.cc)\n'
-            #     readme += u'* [Résultats du vote](https://cocorico.cc)\n'
-            #     summary += u'\n## Vote\n\n'
-            #     summary += u'* [Voter](https://cocorico.cc)\n'
-            #     summary += u'* [Résultats du vote](https://cocorico.cc)\n'
-
             edits = self.build_edit_matrix(node)
             articles = self.get_articles(node)
             modified_texts = self.get_modified_texts(edits)
@@ -126,6 +119,9 @@ class CreateGitBookVisitor(AbstractVisitor):
                 'modified': modified_texts,
                 'articles': articles
             }
+
+            if 'cocoricoVote' in node:
+                template_data['cocorico_vote'] = node['cocoricoVote']
 
             self.template_file('book.json', template_data)
             self.template_file('styles/website.css', template_data)
@@ -162,27 +158,27 @@ class CreateGitBookVisitor(AbstractVisitor):
                     current_article += 1
                 current_law += 1
 
-            process = subprocess.Popen(
-                'gitbook install',
-                cwd=self.tmp_dir,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stdin=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            out, err = process.communicate()
+            if 'html' in self.formats:
+                self.cmd('gitbook install')
+                self.cmd('gitbook build')
 
-            process = subprocess.Popen(
-                'gitbook build',
-                cwd=self.tmp_dir,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stdin=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            out, err = process.communicate()
+                if 'markdown' in self.formats:
+                    copy_tree(self.tmp_dir, self.gitbook_dir)
+                else:
+                    copy_tree(os.path.join(self.tmp_dir, '_book'), self.gitbook_dir)
+            else:
+                copy_tree(self.tmp_dir, self.gitbook_dir)
 
-            copy_tree(os.path.join(self.tmp_dir, '_book'), self.gitbook_dir)
+    def cmd(self, command):
+        process = subprocess.Popen(
+            command,
+            cwd=self.tmp_dir,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return process.communicate()
 
     def get_book_title(self, root_node):
         title = root_node['type'].title()
@@ -264,24 +260,31 @@ class CreateGitBookVisitor(AbstractVisitor):
             law_edits = {k: v for k, v in edits.iteritems() if k[0] == law_id}
             articles = []
             for k, v in edits.iteritems():
-                commits = []
+                law_ref = filter_nodes(v[0][-1], lambda n: n['type'] == 'law-reference' and n['lawId'] == k[0])[0]
+                article_ref = filter_nodes(law_ref, lambda n: n['type'] == 'article-reference' and n['id'] == k[1])[0]
 
-                f = open(k[2], 'r')
+                f = open(article_ref['filename'], 'r')
                 text = f.read().decode('utf-8')
                 original_text = text
                 f.close()
 
+                commits = []
                 for edit_source in v:
                     title, href = self.get_deep_link(edit_source)
                     commits.append({'title': title, 'link': href})
                     edit_refs = filter_nodes(edit_source[-1], lambda n: n['type'] == 'edit')
                     for edit_ref in edit_refs:
                         text = self.patch(text, edit_ref['diff'])
-                articles.append({
+                article = {
                     'id': k[1],
                     'diff': duralex.diff.make_html_rich_diff(original_text, text),
                     'commits': commits
-                })
+                }
+                if 'gitlabHistory' in article_ref:
+                    article['gitlabHistory'] = article_ref['gitlabHistory']
+                if 'githubHistory' in article_ref:
+                    article['githubHistory'] = article_ref['githubHistory']
+                articles.append(article)
             articles = sorted(articles, key=lambda x: x['id'].replace('-', ' '))
             modified.append({'law': law_id, 'articles': articles})
         return modified
@@ -294,7 +297,7 @@ class CreateGitBookVisitor(AbstractVisitor):
                 lambda n: 'type' in n and n['type'] == 'law-reference',
                 get_node_ancestors(article_ref)
             )[0]
-            t = (law_ref['lawId'], article_ref['id'], article_ref['filename'])
+            t = (law_ref['lawId'], article_ref['id'])
             if t not in edits:
                 edits[t] = []
             edits[t].append(self.get_edit_source_nodes(article_ref))

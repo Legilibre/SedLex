@@ -22,6 +22,8 @@ from sedlex.AddGitLabIssueVisitor import AddGitLabIssueVisitor
 from sedlex.GitCommitVisitor import GitCommitVisitor
 from sedlex.CreateGitBookVisitor import CreateGitBookVisitor
 from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
+from sedlex.AddGitHubArticleLinkVisitor import AddGitHubArticleLinkVisitor
+from sedlex.AddGitLabArticleLinkVisitor import AddGitLabArticleLinkVisitor
 
 def handle_data(data, args):
     ast = json.loads(data)
@@ -36,6 +38,7 @@ def handle_data(data, args):
         AddDiffVisitor().visit(ast)
 
     if args.github_token and args.github_repository:
+        AddGitHubArticleLinkVisitor(args).visit(ast)
         AddGitHubIssueVisitor(args).visit(ast)
 
     if args.gitlab_token and args.gitlab_repository:
@@ -69,8 +72,10 @@ def main(argv=None):
     parser.add_argument('--gitlab-token', help='the GitLab API token')
     parser.add_argument('--gitlab-repository', help='the target GitLab repository')
     parser.add_argument('--gitbook', help='create a GitBook')
+    parser.add_argument('--gitbook-format', choices=['html', 'markdown'], nargs='+', default=['markdown'], help='the comma-separated list of GitBook export formats')
     parser.add_argument('--cocorico-app-id', help='the Cocorico App ID to create the vote')
     parser.add_argument('--cocorico-secret', help='the Cocorico secret to create the vote')
+    parser.add_argument('--cocorico-url', help='the URL of Cocorico backend')
 
     args = parser.parse_args()
 
