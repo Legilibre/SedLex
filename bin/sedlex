@@ -18,6 +18,7 @@ from sedlex.AddCommitMessageVisitor import AddCommitMessageVisitor
 from sedlex.AddArcheoLexFilenameVisitor import AddArcheoLexFilenameVisitor
 from sedlex.AddDiffVisitor import AddDiffVisitor
 from sedlex.AddGitHubIssueVisitor import AddGitHubIssueVisitor
+from sedlex.AddGitLabIssueVisitor import AddGitLabIssueVisitor
 from sedlex.GitCommitVisitor import GitCommitVisitor
 from sedlex.CreateGitBookVisitor import CreateGitBookVisitor
 from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
@@ -36,6 +37,10 @@ def handle_data(data, args):
 
     if args.github_token and args.github_repository:
         AddGitHubIssueVisitor(args).visit(ast)
+
+    if args.gitlab_token and args.gitlab_repository:
+        AddGitLabArticleLinkVisitor(args).visit(ast)
+        AddGitLabIssueVisitor(args).visit(ast)
 
     if args.git_commit:
         GitCommitVisitor().visit(ast)
@@ -61,6 +66,8 @@ def main(argv=None):
     parser.add_argument('--git-commit', action='store_true', help='git commit each edit')
     parser.add_argument('--github-token', help='the GitHub API token')
     parser.add_argument('--github-repository', help='the target GitHub repository')
+    parser.add_argument('--gitlab-token', help='the GitLab API token')
+    parser.add_argument('--gitlab-repository', help='the target GitLab repository')
     parser.add_argument('--gitbook', help='create a GitBook')
     parser.add_argument('--cocorico-app-id', help='the Cocorico App ID to create the vote')
     parser.add_argument('--cocorico-secret', help='the Cocorico secret to create the vote')
