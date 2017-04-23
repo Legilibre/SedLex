@@ -39,6 +39,7 @@ class AddGitHubIssueVisitor(AbstractVisitor):
                         issue.edit(title=title, body=body)
             if not found:
                 issue = self.repo.create_issue(title=title, body=body)
+                node['githubIssue'] = issue.html_url
                 self.current_issue = issue.number
 
         super(AddGitHubIssueVisitor, self).visit_node(node)
