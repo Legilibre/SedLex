@@ -38,9 +38,29 @@ class AddCommitMessageVisitor(AbstractVisitor):
             return
 
         if 'children' in node and len(node['children']) > 0:
-            self.ref_parts.append(u'dans l\'article ' + node['id'])
+            self.ref_parts.append(u'de l\'article ' + node['id'])
         else:
             self.ref_parts.append(u'l\'article ' + node['id'])
+
+    def visit_alinea_reference_node(self, node, post):
+        if post:
+            return
+
+        if 'children' in node and len(node['children']) > 0:
+            self.ref_parts.append(u'de l\'alinéa ' + str(node['order']))
+        else:
+            self.ref_parts.append(u'l\'alinéa ' + str(node['order']))
+
+    def visit_sentence_reference_node(self, node, post):
+        if post:
+            return
+
+        number_word = str(node['order']) + u'ère' if node['order'] == 1 else u'ème'
+
+        if 'children' in node and len(node['children']) > 0:
+            self.ref_parts.append(u'de la ' + number_word + ' phrase')
+        else:
+            self.ref_parts.append(u'la ' + number_word + ' phrase')
 
     def visit_words_reference_node(self, node, post):
         if post:
