@@ -6,10 +6,10 @@
 
 ## <i class="fa fa-pencil-square-o"></i> Modifications
 
-{% if modified[current_law].articles[current_article].gitlabLink is defined %}
-[<i class="fa fa-code-fork"></i> Voir l'historique complet de cet article (expert)]({{ modified[current_law].articles[current_article].gitlabLink }})
+{% if modified[current_law].articles[current_article].gitlabHistory is defined %}
+[<i class="fa fa-code-fork"></i> Voir l'historique complet de cet article (expert)]({{ modified[current_law].articles[current_article].gitlabHistory }})
 {% elif modified[current_law].articles[current_article].githubLink is defined %}
-[<i class="fa fa-code-fork"></i> Voir l'historique complet de cet article (expert)]({{ modified[current_law].articles[current_article].githubLink }})
+[<i class="fa fa-code-fork"></i> Voir l'historique complet de cet article (expert)]({{ modified[current_law].articles[current_article].githubHistory }})
 {% endif %}
 
 Cet article est modifié par les articles {{ 'de la' if 'proposition' in type else 'du' }} {{ type }} suivants :
