@@ -4,12 +4,17 @@
 
 ## <i class="fa fa-bookmark-o"></i> Articles
 
+{{ 'La' if 'proposition' in type else 'Le' }} {{ type }} est constitué{{ 'e' if 'proposition' in type}} des articles suivants :
+
 {% for article in articles %}
 * [Article {{ article.order }}](article-{{ article.order }}.md)
 {%- endfor %}
 
 {% if modified is defined and modified | length > 0 %}
 ## <i class="fa fa-file-text-o"></i> Textes modifiés
+
+{{ 'La' if 'proposition' in type else 'Le' }} {{ type }} modifie les textes suivants :
+
 {% for m in modified %}
 * [Loi N°{{ m.law }}]({{ m.law }}.md)
  {%- for article in m.articles %}

@@ -8,6 +8,8 @@
 
 [<i class="fa fa-code-fork"></i> Voir dans le système de gestion de versions (expert)]({{ articles[current_article].githubIssue }})
 
+L'article {{ articles[current_article].order }} {{ 'de la' if 'proposition' in type else 'du' }} {{ type }} apporte les modifications suivantes :
+
 {% for commit in articles[current_article].commits %}
 ### {{ commit.title }}
 
