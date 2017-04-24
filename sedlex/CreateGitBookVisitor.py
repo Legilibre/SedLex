@@ -36,8 +36,6 @@ class CreateGitBookVisitor(AbstractVisitor):
                 continue;
             if ancestor['type'] == 'article':
                 messages.append('Article ' + str(ancestor['order']))
-                if 'githubIssue' in node:
-                    link = ancestor['githubIssue']
             if ancestor['type'] == 'bill-header1' and 'implicit' not in ancestor:
                 messages.append(int_to_roman(ancestor['order']))
             if ancestor['type'] == 'bill-header2':
@@ -91,7 +89,8 @@ class CreateGitBookVisitor(AbstractVisitor):
                 'order': article_node['order'],
                 'content': article_node['content'].replace('\n', '\n\n'),
                 'commits': commits,
-                'githubIssue': article_node['githubIssue'] if 'githubIssue' in article_node else None
+                'githubIssue': article_node['githubIssue'] if 'githubIssue' in article_node else None,
+                'gitlabIssue': article_node['gitlabIssue'] if 'gitlabIssue' in article_node else None
             })
         return articles
 
