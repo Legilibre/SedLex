@@ -1,8 +1,10 @@
-# <i class="fa fa-university" aria-hidden="true"></i> {{ title | title }}
+{%- import 'html.j2' as html -%}
 
-[<i class="fa fa-external-link" aria-hidden="true"></i> Texte original]({{ url }})
+# {{ html.icon('university" aria-hidden="true') }} {{ title | title }}
 
-## <i class="fa fa-bookmark-o"></i> Articles
+[{{ html.icon('external-link" aria-hidden="true') }} Texte original]({{ url }})
+
+## {{ html.icon('bookmark-o') }} Articles
 
 {{ 'La' if 'proposition' in type else 'Le' }} {{ type }} est constitué{{ 'e' if 'proposition' in type}} des articles suivants :
 
@@ -11,7 +13,7 @@
 {%- endfor %}
 
 {% if modified is defined and modified | length > 0 %}
-## <i class="fa fa-file-text-o"></i> Textes modifiés
+## {{ html.icon('file-text-o') }} Textes modifiés
 
 {{ 'La' if 'proposition' in type else 'Le' }} {{ type }} modifie les textes suivants :
 

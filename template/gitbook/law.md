@@ -1,6 +1,8 @@
-# <i class="fa fa-balance-scale"></i> Loi N°{{ modified[current_law].law }}
+{%- import 'html.j2' as html -%}
 
-## <i class="fa fa-pencil-square-o"></i> Articles modifiés
+# {{ html.icon('balance-scale') }} Loi N°{{ modified[current_law].law }}
+
+## {{ html.icon('pencil-square-o') }} Articles modifiés
 
 {{ 'La' if 'proposition' in type else 'Le' }} {{ type }} modifie les articles de la loi N°{{ modified[current_law].law }} suivants :
 

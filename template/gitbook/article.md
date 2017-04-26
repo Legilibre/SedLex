@@ -1,15 +1,17 @@
-# <i class="fa fa-bookmark-o"></i> {{ title | title }}, Article {{ articles[current_article].order }}
+{%- import 'html.j2' as html -%}
 
-## <i class="fa fa-file-text-o"></i> Texte
+# {{ html.icon('bookmark-o') }} {{ title | title }}, Article {{ articles[current_article].order }}
+
+## {{ html.icon('file-text-o') }} Texte
 
 {{ articles[current_article].content }}
 
-## <i class="fa fa-pencil-square-o"></i> Suivi des modifications
+## {{ html.icon('pencil-square-o') }} Suivi des modifications
 
 {% if articles[current_article].gitlabIssue is defined %}
-[<i class="fa fa-code-fork"></i> Voir dans le système de gestion de versions (expert)]({{ articles[current_article].gitlabIssue }})
+[{{ html.icon('code-fork') }} Voir dans le système de gestion de versions (expert)]({{ articles[current_article].gitlabIssue }})
 {% elif articles[current_article].githubIssue is defined %}
-[<i class="fa fa-code-fork"></i> Voir dans le système de gestion de versions (expert)]({{ articles[current_article].githubIssue }})
+[{{ html.icon('code-fork') }} Voir dans le système de gestion de versions (expert)]({{ articles[current_article].githubIssue }})
 {% endif %}
 
 L'article {{ articles[current_article].order }} {{ 'de la' if 'proposition' in type else 'du' }} {{ type }} apporte les modifications suivantes :
