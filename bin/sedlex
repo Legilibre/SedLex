@@ -48,6 +48,9 @@ def handle_data(data, args):
     if args.git_commit:
         GitCommitVisitor().visit(ast)
 
+    if args.git_push:
+        GitPushVisitor().visit(ast)
+
     if args.gitbook:
         CreateGitBookVisitor(args).visit(ast)
 
@@ -67,6 +70,7 @@ def main(argv=None):
     parser.add_argument('--diff', action='store_true', help='compute a diff for each edit')
     parser.add_argument('--commit-message', action='store_true', help='generate a commit message for each edit')
     parser.add_argument('--git-commit', action='store_true', help='git commit each edit')
+    parser.add_argument('--git-push', action='store_true', help='git push all the referenced repositories')
     parser.add_argument('--github-token', help='the GitHub API token')
     parser.add_argument('--github-repository', help='the target GitHub repository')
     parser.add_argument('--gitlab-token', help='the GitLab API token')
