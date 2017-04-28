@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from AbstractVisitor import AbstractVisitor
+import template
 
 from duralex.alinea_parser import *
 
@@ -12,29 +13,26 @@ class AddGitLabIssueVisitor(AbstractVisitor):
         self.repo_name = args.gitlab_repository
         self.repo = self.gitlab.projects.get(self.repo_name)
         self.issues = self.repo.issues.list(state='opened')
-        self.current_issue = -1
+        self.current_issue_number = -1
+        self.current_issue_link = None
 
         super(AddGitLabIssueVisitor, self).__init__()
 
     def visit_edit_node(self, node, post):
         if post:
             return
-
-        if 'commitMessage' not in node:
-            node['commitMessage'] = '(#' + str(self.current_issue) + ')'
-        else:
-            node['commitMessage'] = node['commitMessage'] + '\nGitLab: #' + str(self.current_issue)
-
+        node['gitlabIssue'] = self.current_issue_link
+        node['commitMessage'] = template.template_string('./template/gitlab/commit_message.j2', {'edit': node})
 
     def visit_node(self, node):
         if 'type' in node and node['type'] == 'article':
-            title = 'Article ' + str(node['order'])
-            description = node['content'].replace('\n', '\n\n')
+            title = template.template_string('./template/gitlab/issue_title.j2', {'article': node})
+            description = template.template_string('./template/gitlab/issue_description.j2', {'article': node})
             found = False
             for issue in self.issues:
                 if issue.title == title:
                     found = True
-                    self.current_issue = issue.iid
+                    self.current_issue_number = issue.iid
                     if issue.description != description:
                         issue.save(title=title, description=description)
             if not found:
@@ -45,7 +43,8 @@ class AddGitLabIssueVisitor(AbstractVisitor):
                     },
                     project_id=self.repo.id
                 )
-                self.current_issue = issue.iid
-            node['gitlabIssue'] = 'https://gitlab.com/' + self.repo_name + '/issues/' + str(self.current_issue)
+                self.current_issue_number = issue.iid
+            self.current_issue_link = 'https://gitlab.com/' + self.repo_name + '/issues/' + str(self.current_issue_number)
+            node['gitlabIssue'] = self.current_issue_link
 
         super(AddGitLabIssueVisitor, self).visit_node(node)
