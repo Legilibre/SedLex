@@ -25,8 +25,8 @@ class AddDiffVisitor(AbstractVisitor):
     def __init__(self):
         self.filename = ''
         self.content = {}
-        self.begin = 0;
-        self.end = -1;
+        self.begin = 0
+        self.end = -1
         super(AddDiffVisitor, self).__init__()
 
     def visit_alinea_reference_node(self, node, post):
