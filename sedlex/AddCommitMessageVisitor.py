@@ -6,6 +6,8 @@ from duralex.alinea_parser import *
 
 import duralex.node_type
 
+import re
+
 def int_to_roman(integer):
     string = ''
     table = [
@@ -68,8 +70,12 @@ class AddCommitMessageVisitor(AbstractVisitor):
 
         quotes = filter_nodes(node, lambda n: n['type'] == 'quote')
         quotes = ''.join([n['words'] for n in quotes])
+        num_words = len(re.findall(r'\S+', quotes))
 
-        self.ref_parts.append(u'les mots "' + quotes + '"')
+        if num_words == 1:
+            self.ref_parts.append(u'le mot "' + quotes + '"')
+        else:
+            self.ref_parts.append(u'les mots "' + quotes + '"')
 
     def visit_words_definition_node(self, node, post):
         if post:
@@ -77,8 +83,12 @@ class AddCommitMessageVisitor(AbstractVisitor):
 
         quotes = filter_nodes(node, lambda n: n['type'] == 'quote')
         quotes = ''.join([n['words'] for n in quotes])
+        num_words = len(re.findall(r'\S+', quotes))
 
-        self.def_parts.append(u'les mots "' + quotes + '"')
+        if num_words == 1:
+            self.def_parts.append(u'le mot "' + quotes + '"')
+        else:
+            self.def_parts.append(u'les mots "' + quotes + '"')
 
     def visit_edit_node(self, node, post):
         if not post:
