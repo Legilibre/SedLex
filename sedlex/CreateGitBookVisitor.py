@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from AbstractVisitor import AbstractVisitor
+import template
 
 from duralex.alinea_parser import *
 from duralex.AddCommitMessageVisitor import int_to_roman
@@ -122,37 +123,53 @@ class CreateGitBookVisitor(AbstractVisitor):
             if 'cocoricoVote' in node:
                 template_data['cocorico_vote'] = node['cocoricoVote']
 
-            self.template_file('book.json', template_data)
-            self.template_file('styles/website.css', template_data)
-            self.template_file('SUMMARY.md', template_data)
-            self.template_file('README.md', template_data)
+            template.template_file(
+                './template/gitbook/book.json.j2',
+                template_data,
+                os.path.join(self.tmp_dir, 'book.json')
+            )
+            template.template_file(
+                './template/gitbook/styles/website.css.j2',
+                template_data,
+                os.path.join(self.tmp_dir, 'styles/website.css')
+            )
+            template.template_file(
+                './template/gitbook/SUMMARY.md.j2',
+                template_data,
+                os.path.join(self.tmp_dir, 'SUMMARY.md')
+            )
+            template.template_file(
+                './template/gitbook/README.md.j2',
+                template_data,
+                os.path.join(self.tmp_dir, 'README.md')
+            )
             current_article = 0
             for article in articles:
-                self.template_file(
-                    'article.md',
+                template.template_file(
+                    './template/gitbook/article.md.j2',
                     self.merge_dicts(template_data, {'current_article': current_article}),
-                    'article-' + str(article['order']) + '.md'
+                    os.path.join(self.tmp_dir, 'article-' + str(article['order']) + '.md')
                 )
                 current_article += 1
 
             current_article = 0
             current_law = 0
             for modified in modified_texts:
-                self.template_file(
-                    'law.md',
+                template.template_file(
+                    './template/gitbook/law.md.j2',
                     self.merge_dicts(template_data, {
                         'current_law': current_law,
                     }),
-                    modified['law'] + '.md'
+                    os.path.join(self.tmp_dir, modified['law'] + '.md')
                 )
                 for article in modified['articles']:
-                    self.template_file(
-                        'text.md',
+                    template.template_file(
+                        './template/gitbook/text.md.j2',
                         self.merge_dicts(template_data, {
                             'current_law': current_law,
                             'current_article': current_article
                         }),
-                        modified['law'] + '-' + article['id'] + '.md'
+                        os.path.join(self.tmp_dir, modified['law'] + '-' + article['id'] + '.md')
                     )
                     current_article += 1
                 current_law += 1
@@ -301,17 +318,3 @@ class CreateGitBookVisitor(AbstractVisitor):
                 edits[t] = []
             edits[t].append(self.get_edit_source_nodes(article_ref))
         return edits
-
-    def template_file(self, template, values, out=None):
-        f = open(os.path.join('./template/gitbook', template), 'r')
-        t = jinja2.Environment(loader=jinja2.FileSystemLoader('./template/gitbook')).from_string(f.read().decode('utf-8'))
-        f.close()
-
-        filename = os.path.join(self.tmp_dir, out if out else template)
-        path = os.path.dirname(filename)
-        if not os.path.exists(path):
-            os.makedirs(path)
-        f = open(filename, 'w')
-        f.write(t.render(values).encode('utf-8'))
-        f.truncate()
-        f.close()
