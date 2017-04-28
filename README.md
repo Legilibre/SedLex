@@ -118,6 +118,8 @@ duralex --file bill.html | ./bin/sedlex --diff | jq -r '.. | .diff? | strings' |
 
 SedLex can automagically apply each `edit` node into an actual Git commit by passing the `--git-commit` flag.
 
+Passing the `--git-push` flag will effectively push those commits.
+
 SedLex can also generate meaningful commit messages by passing the `--commit-message` flag.
 For example, the following `edit` node:
 
