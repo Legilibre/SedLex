@@ -6,6 +6,8 @@ from duralex.alinea_parser import *
 
 from github import Github
 
+import template
+
 class AddGitHubIssueVisitor(AbstractVisitor):
     def __init__(self, args):
         self.github = Github(args.github_token)
