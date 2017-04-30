@@ -8,9 +8,9 @@
 
 ## {{ html.icon('pencil-square-o') }} Suivi des modifications
 
-{% if articles[current_article].gitlabIssue is defined %}
+{% if articles[current_article].gitlabIssue %}
 [{{ html.icon('code-fork') }} Voir dans le système de gestion de versions (expert)]({{ articles[current_article].gitlabIssue }})
-{% elif articles[current_article].githubIssue is defined %}
+{% elif articles[current_article].githubIssue %}
 [{{ html.icon('code-fork') }} Voir dans le système de gestion de versions (expert)]({{ articles[current_article].githubIssue }})
 {% endif %}
 
