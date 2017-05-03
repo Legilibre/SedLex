@@ -116,6 +116,7 @@ class CreateGitBookVisitor(AbstractVisitor):
                 'title': self.get_book_title(node),
                 'url': node['url'],
                 'type': node['type'],
+                'description': node['description'],
                 'modified': modified_texts,
                 'articles': articles
             }
