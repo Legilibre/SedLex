@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
 
 from duralex.alinea_parser import *
 
@@ -24,7 +24,7 @@ class GitCommitVisitor(AbstractVisitor):
 
         if 'diff' in node:
             process = subprocess.Popen(
-                'patch -p0 --remove-empty-files --ignore-whitespace',
+                'patch -r - -p0 --remove-empty-files --ignore-whitespace',
                 shell=True,
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,

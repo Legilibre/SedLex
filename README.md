@@ -67,7 +67,7 @@ duralex --file bill.html | ./bin/sedlex --diff
                   "type": "article-reference"
                 }
               ],
-              "codeName": "code des instruments monétaires et des médailles",
+              "id": "code des instruments monétaires et des médailles",
               "type": "code-reference"
             }
           ],
@@ -160,7 +160,7 @@ For example, the following `edit` node:
           "type": "article-reference"
         }
       ],
-      "codeName": "code des instruments monétaires et des médailles",
+      "id": "code des instruments monétaires et des médailles",
       "type": "code-reference"
     }
   ],

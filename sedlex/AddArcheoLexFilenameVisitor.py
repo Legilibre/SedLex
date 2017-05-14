@@ -1,14 +1,10 @@
 import os
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
 
 class AddArcheoLexFilenameVisitor(AbstractVisitor):
-    @staticmethod
-    def register(arg_parser):
-        pass
-
-    def __init__(self):
-        self.base = 'data/'
+    def __init__(self, repository):
+        self.base = repository
         self.filename = ''
         self.path = ''
 
@@ -21,18 +17,25 @@ class AddArcheoLexFilenameVisitor(AbstractVisitor):
         self.path = os.path.join(self.path, 'Article_' + node['id'] + '.md')
         node['filename'] = self.path
 
+    def visit_article_definition_node(self, node, post):
+        if post:
+            return
+
+        self.path = os.path.join(os.path.dirname(self.path), 'Article_' + node['id'] + '.md')
+        node['filename'] = self.path
+
     def visit_code_reference_node(self, node, post):
         if post:
             return
 
-        self.path = os.path.join(self.path, node['codeName'])
+        self.path = os.path.join(self.path, node['id'])
         node['repository'] = self.path
 
     def visit_law_reference_node(self, node, post):
         if post:
             return
 
-        self.path = os.path.join(self.path, 'loi_' + node['lawId'])
+        self.path = os.path.join(self.path, 'loi_' + node['id'])
         node['repository'] = self.path
 
     def visit_node(self, node):

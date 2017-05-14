@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
 
 import subprocess
 import os
@@ -23,7 +23,7 @@ class GitPushVisitor(AbstractVisitor):
                     [
                         'git',
                         '-C', repository,
-                        'push'
+                        'push', '--all', 'origin'
                     ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,

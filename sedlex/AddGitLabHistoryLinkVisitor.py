@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
 
 import os
 
@@ -14,7 +14,7 @@ class AddGitLabHistoryLinkVisitor(AbstractVisitor):
     def visit_law_reference_node(self, node, post):
         if post:
             return
-        self.law_id = node['lawId']
+        self.law_id = node['id']
 
     def visit_article_reference_node(self, node, post):
         if post:

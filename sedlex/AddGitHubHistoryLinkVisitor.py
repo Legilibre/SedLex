@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
 
 class AddGitHubHistoryLinkVisitor(AbstractVisitor):
     def __init__(self, args):
@@ -13,13 +13,15 @@ class AddGitHubHistoryLinkVisitor(AbstractVisitor):
         if post:
             return
 
-        self.law_id = node['lawId']
+        self.law_id = node['id']
 
     def visit_article_reference_node(self, node, post):
         if post:
             return
 
-        node['githubHistory'] = ('https://github.com/'
-            + self.repo + '/commits/master/'
-            + 'loi_' + self.law_id + '/'
-            + 'Article_' + node['id'] + '.md')
+        node['githubHistory'] = (
+            'https://github.com/'
+            + self.repo +
+            '/commits/' + self.law_id + '/'
+            + 'Article_' + node['id'] + '.md'
+        )

@@ -14,7 +14,11 @@
 [{{ html.icon('code-fork') }} Voir l'historique complet de cet article (expert)]({{ modified[current_law].articles[current_article].githubHistory }})
 {% endif %}
 
-Cet article est modifié par les articles {{ 'de la' if 'proposition' in type else 'du' }} {{ type }} suivants :
+{% if type == 'law-proposal' %}
+Cet article est modifié par les articles de la proposition de loi suivants :
+{% elif type == 'law-project' %}
+Cet article est modifié par les articles du projet de loi suivants :
+{% endif %}
 
 {%- for commit in modified[current_law].articles[current_article].commits %}
 * [{{ commit.title }}]({{ commit.link }})

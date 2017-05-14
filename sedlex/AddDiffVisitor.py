@@ -7,19 +7,20 @@ import sys
 import os
 
 import duralex.alinea_parser as parser
-import duralex.node_type as node_type
 import diff
 
-from AbstractVisitor import AbstractVisitor
+from duralex.AbstractVisitor import AbstractVisitor
+
+import duralex.tree as tree
 
 class AddDiffVisitor(AbstractVisitor):
     REGEXP = {
-        'header1-reference'     : re.compile(r'(?=((\n|^)#\w(.|\n)*?)(\n#\w|$))', re.UNICODE),
-        'header2-reference'     : re.compile(r'(?=((\n|^)##\w(.|\n)*?)(\n#{1,2}\w|$))', re.UNICODE),
-        'header3-reference'     : re.compile(r'(?=((\n|^)###\w(.|\n)*?\n)(\n#{1,3}\w|$))', re.UNICODE),
-        'alinea-reference'      : re.compile(r'^(.+)$', re.UNICODE | re.MULTILINE),
-        'sentence-reference'    : re.compile(r'([A-ZÀÀÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ].*?\.)', re.UNICODE),
-        'words-reference'       : re.compile(r'(\b\w.*?\b)', re.UNICODE)
+        tree.TYPE_HEADER1_REFERENCE     : re.compile(r'([IVXCLDM]+\. - (?:(?:.|\n)(?![IVXCLDM]+\. - ))*)', re.UNICODE),
+        tree.TYPE_HEADER2_REFERENCE     : re.compile(r'(\d+\. (?:(?:.|\n)(?!\d+\. ))*)', re.UNICODE),
+        tree.TYPE_HEADER3_REFERENCE     : re.compile(r'([a-z]+\) (?:(?:.|\n)(?![a-z]+\) ))*)', re.UNICODE),
+        tree.TYPE_ALINEA_REFERENCE      : re.compile(r'^(.+)$', re.UNICODE | re.MULTILINE),
+        tree.TYPE_SENTENCE_REFERENCE    : re.compile(r'([A-ZÀÀÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ].*?\.)', re.UNICODE),
+        tree.TYPE_WORD_REFERENCE        : re.compile(r'(\b\w.*?\b)', re.UNICODE)
     }
 
     def __init__(self):
@@ -34,7 +35,7 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         match = re.finditer(AddDiffVisitor.REGEXP['alinea-reference'], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1]
+        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
 
@@ -43,7 +44,34 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         match = re.finditer(AddDiffVisitor.REGEXP['sentence-reference'], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1]
+        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        self.begin = match.start()
+        self.end = match.start() + len(match.group(1))
+
+    def visit_header1_reference_node(self, node, post):
+        if post:
+            return
+
+        match = re.finditer(AddDiffVisitor.REGEXP['header1-reference'], self.content[self.filename][self.begin:self.end])
+        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        self.begin = match.start()
+        self.end = match.start() + len(match.group(1))
+
+    def visit_header2_reference_node(self, node, post):
+        if post:
+            return
+
+        match = re.finditer(AddDiffVisitor.REGEXP['header2-reference'], self.content[self.filename][self.begin:self.end])
+        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        self.begin = match.start()
+        self.end = match.start() + len(match.group(1))
+
+    def visit_header3_reference_node(self, node, post):
+        if post:
+            return
+
+        match = re.finditer(AddDiffVisitor.REGEXP['header3-reference'], self.content[self.filename][self.begin:self.end])
+        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
 
@@ -52,22 +80,44 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
-            self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
-            self.end = self.begin + len(node['children'][0]['words'])
+            if 'position' in node and node['position'] == 'after':
+                self.begin = (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
+                    + len(node['children'][0]['words']))
+            else:
+                self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
+                self.end = self.begin + len(node['children'][0]['words'])
 
     def visit_article_reference_node(self, node, post):
         if post:
             return
+        self.set_content_from_file(node['filename'].encode('utf-8'))
 
-        self.filename = node['filename'].encode('utf-8')
+    def visit_bill_article_reference_node(self, node, post):
+        bill_article = tree.filter_nodes(
+            tree.get_root(node),
+            lambda n: n['type'] == tree.TYPE_BILL_ARTICLE and n['order'] == node['order']
+        )
+        if len(bill_article) == 1:
+            self.set_content(bill_article[0]['order'], bill_article[0]['content'])
+
+    def visit_article_definition_node(self, node, post):
+        if post:
+            return
+        self.set_content_from_file(node['filename'].encode('utf-8'))
+
+    def set_content_from_file(self, filename):
+        self.filename = filename
         if self.filename not in self.content:
             if os.path.isfile(self.filename):
                 input_file = codecs.open(self.filename, mode="r", encoding="utf-8")
-                self.content[self.filename] = input_file.read()
+                self.set_content(self.filename, input_file.read())
             else:
-                self.content[self.filename] = ''
-        self.begin = 0;
-        self.end = len(self.content[self.filename])
+                self.set_content(self.filename, '')
+
+    def set_content(self, key, content):
+        self.content[key] = content
+        self.begin = 0
+        self.end = len(content)
 
     def visit_edit_node(self, node, post):
         if not post:
@@ -78,26 +128,40 @@ class AddDiffVisitor(AbstractVisitor):
         old_content = self.content[self.filename]
         new_content = old_content
 
-        if node['editType'] == 'replace':
-            # FIXME: properly detect we're supposed to replace words?
-            def_node = parser.filter_nodes(node, lambda x: x['type'] == 'words')[-1]
-            new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
-        elif node['editType'] == 'delete':
-            ref_node = parser.filter_nodes(node, lambda x: node_type.is_reference(x))[-1]
-            new_content = old_content[0:self.begin] + old_content[self.end:]
-        elif node['editType'] == 'edit':
-            def_node = parser.filter_nodes(node, lambda x: x['type'] == 'words')[-1]
-            new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
+        try:
+            if node['editType'] == 'replace':
+                # replace words
+                def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
+                if def_node['type'] == tree.TYPE_WORD_DEFINITION:
+                    new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
+            elif node['editType'] == 'delete':
+                new_content = old_content[0:self.begin] + old_content[self.end:]
+            elif node['editType'] == 'edit':
+                def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
+                # edit words
+                if def_node['type'] == tree.TYPE_WORD_DEFINITION:
+                    new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
+            elif node['editType'] == 'add':
+                # add an article
+                if node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
+                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
+                    new_content = '\n'.join([
+                        n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
+                    ])
 
-        unified_diff = difflib.unified_diff(
-            old_content.splitlines(),
-            new_content.splitlines() if new_content != '' else [],
-            tofile='\"' + self.filename + '\"',
-            fromfile='\"' + self.filename + '\"'
-        )
-        unified_diff = [unicode(d[0:-1], 'utf-8') if isinstance(d, str) else d for d in unified_diff]
-        if len(unified_diff) > 0:
-            node['diff'] = '\n'.join(unified_diff)
-            node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
+            unified_diff = difflib.unified_diff(
+                old_content.splitlines() if old_content != '' else [],
+                new_content.splitlines() if new_content != '' else [],
+                tofile='\"' + self.filename + '\"',
+                fromfile='\"' + self.filename + '\"'
+            )
+            unified_diff = [unicode(d[0:-1], 'utf-8') if isinstance(d, str) else d for d in unified_diff]
+            if len(unified_diff) > 0:
+                node['diff'] = '\n'.join(unified_diff)
+                node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
 
-        self.content[self.filename] = new_content
+            if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
+                self.set_content(self.filename, new_content)
+        except Exception:
+            # FIXME: proper error message
+            pass

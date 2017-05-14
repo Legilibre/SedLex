@@ -26,40 +26,40 @@ from sedlex.AddGitHubHistoryLinkVisitor import AddGitHubHistoryLinkVisitor
 from sedlex.AddGitLabHistoryLinkVisitor import AddGitLabHistoryLinkVisitor
 
 def handle_data(data, args):
-    ast = json.loads(data)
+    tree = json.loads(data)
 
-    AddParentVisitor().visit(ast)
+    AddParentVisitor().visit(tree)
 
     if args.commit_message:
-        AddCommitMessageVisitor().visit(ast)
+        AddCommitMessageVisitor().visit(tree)
 
     if args.diff:
-        AddArcheoLexFilenameVisitor().visit(ast)
-        AddDiffVisitor().visit(ast)
+        AddArcheoLexFilenameVisitor(args.repository).visit(tree)
+        AddDiffVisitor().visit(tree)
 
     if args.github_token and args.github_repository:
-        AddGitHubHistoryLinkVisitor(args).visit(ast)
-        AddGitHubIssueVisitor(args).visit(ast)
+        AddGitHubHistoryLinkVisitor(args).visit(tree)
+        AddGitHubIssueVisitor(args).visit(tree)
 
     if args.gitlab_token and args.gitlab_repository:
-        AddGitLabHistoryLinkVisitor(args).visit(ast)
-        AddGitLabIssueVisitor(args).visit(ast)
+        AddGitLabHistoryLinkVisitor(args).visit(tree)
+        AddGitLabIssueVisitor(args).visit(tree)
 
     if args.git_commit:
-        GitCommitVisitor().visit(ast)
+        GitCommitVisitor().visit(tree)
 
     if args.git_push:
-        GitPushVisitor().visit(ast)
+        GitPushVisitor().visit(tree)
 
     if args.gitbook:
-        CreateGitBookVisitor(args).visit(ast)
+        CreateGitBookVisitor(args).visit(tree)
 
     if args.cocorico_app_id and args.cocorico_secret:
-        AddCocoricoVoteVisitor(args).visit(ast)
+        AddCocoricoVoteVisitor(args).visit(tree)
 
     if not args.quiet:
-        DeleteParentVisitor().visit(ast)
-        json_data = json.dumps(ast, sort_keys=True, indent=2, ensure_ascii=False).encode('utf-8')
+        DeleteParentVisitor().visit(tree)
+        json_data = json.dumps(tree, sort_keys=True, indent=2, ensure_ascii=False).encode('utf-8')
         sys.stdout.write(json_data)
 
 def main(argv=None):
@@ -68,6 +68,7 @@ def main(argv=None):
     parser.add_argument('--url', help='the URL of the bill to process')
     parser.add_argument('--quiet', action='store_true', help='no stdout output')
     parser.add_argument('--diff', action='store_true', help='compute a diff for each edit')
+    parser.add_argument('--repository', help='')
     parser.add_argument('--commit-message', action='store_true', help='generate a commit message for each edit')
     parser.add_argument('--git-commit', action='store_true', help='git commit each edit')
     parser.add_argument('--git-push', action='store_true', help='git push all the referenced repositories')

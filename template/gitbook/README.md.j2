@@ -8,16 +8,33 @@
 
 ## {{ html.icon('bookmark-o') }} Articles
 
-{{ 'La' if 'proposition' in type else 'Le' }} {{ type }} est constitué{{ 'e' if 'proposition' in type}} des articles suivants :
+{% if type == 'law-proposal' %}
+La proposition de loi est constituée des articles suivants :
+{% elif type == 'law-project' %}
+Le projet de loi est constituée des articles suivants :
+{% endif %}
 
 {% for article in articles %}
 * [Article {{ article.order }}](article-{{ article.order }}.md)
 {%- endfor %}
 
+{% if amendments | length > 0 %}
+et des amendements suivants :
+
+{% for amendment in amendments %}
+* [Amendement {{ amendment.id }}](amendment-{{ amendment.id }}.md)
+{%- endfor %}
+
+{% endif %}
+
 {% if modified is defined and modified | length > 0 %}
 ## {{ html.icon('file-text-o') }} Textes modifiés
 
-{{ 'La' if 'proposition' in type else 'Le' }} {{ type }} modifie les textes suivants :
+{% if type == 'law-proposal' %}
+La proposition de loi modifie les textes suivants :
+{% elif type == 'law-project' %}
+Le projet de loi modifie les textes suivants :
+{% endif %}
 
 {% for m in modified %}
 * [Loi N°{{ m.law }}]({{ m.law }}.md)

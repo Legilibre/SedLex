@@ -1,8 +1,17 @@
 # Summary
 
-## {{ type | title }}
+{% if type == 'law-proposal' %}
+## Proposition de loi
+{% elif type == 'law-project' %}
+## Projet de loi
+{% endif %}
 {% for article in articles %}
 * [Article {{ article.order }}](article-{{ article.order }}.md)
+{%- endfor %}
+
+{% for amendment in amendments %}
+## Amendements
+* [Amendement {{ amendment.id }}](amendment-{{ amendment.id }}.md)
 {%- endfor %}
 
 {% if modified is defined and modified | length > 0 %}

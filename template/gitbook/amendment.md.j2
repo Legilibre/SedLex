@@ -1,0 +1,32 @@
+{%- import 'html.j2' as html -%}
+
+# {{ html.icon('bookmark-o') }} {{ title | title }}, Amendement {{ amendments[current_amendment].id }}
+
+## {{ html.icon('lightbulb-o') }} Exposé
+
+{{ amendments[current_amendment].description }}
+
+## {{ html.icon('file-text-o') }} Texte
+
+{{ amendments[current_amendment].content.replace('\n', '\n\n') }}
+
+## {{ html.icon('users') }} Signataires
+
+{% for signatory in amendments[current_amendment].signatories -%}
+* {{ signatory.name }}
+{% endfor %}
+
+{% if amendments[current_amendment].commits | length %}
+## {{ html.icon('pencil-square-o') }} Suivi des modifications
+
+L'amendement {{ amendments[current_amendment].order }} apporte les modifications suivantes :
+
+{% for commit in amendments[current_amendment].commits %}
+### {{ commit.title }}
+
+{{ commit.description | default('') }}
+
+{{ commit.diff }}
+{% endfor %}
+
+{% endif %}
