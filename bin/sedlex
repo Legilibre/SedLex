@@ -24,11 +24,15 @@ from sedlex.CreateGitBookVisitor import CreateGitBookVisitor
 from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
 from sedlex.AddGitHubHistoryLinkVisitor import AddGitHubHistoryLinkVisitor
 from sedlex.AddGitLabHistoryLinkVisitor import AddGitLabHistoryLinkVisitor
+from sedlex.InitializeGitRepositoryVisitor import InitializeGitRepositoryVisitor
 
 def handle_data(data, args):
     tree = json.loads(data)
 
     AddParentVisitor().visit(tree)
+
+    if args.git_init:
+        InitializeGitRepositoryVisitor(args).visit(tree)
 
     if args.commit_message:
         AddCommitMessageVisitor().visit(tree)
@@ -70,6 +74,7 @@ def main(argv=None):
     parser.add_argument('--diff', action='store_true', help='compute a diff for each edit')
     parser.add_argument('--repository', help='')
     parser.add_argument('--commit-message', action='store_true', help='generate a commit message for each edit')
+    parser.add_argument('--git-init', action='store_true', help='initialize the git repository (if needed) in the directory specified by --repository')
     parser.add_argument('--git-commit', action='store_true', help='git commit each edit')
     parser.add_argument('--git-push', action='store_true', help='git push all the referenced repositories')
     parser.add_argument('--github-token', help='the GitHub API token')
