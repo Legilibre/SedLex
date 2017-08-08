@@ -44,7 +44,7 @@ class GitCommitVisitor(AbstractVisitor):
                     'commit',
                     os.path.basename(node['filename']),
                     '-m', self.commitMessage,
-                    '--author="DuraLex <duralex@legilibre.fr>"'
+                    '--author="SedLex <sedlex@legilibre.fr>"'
                 ],
                 # shell=True,
                 stdout=subprocess.PIPE,
