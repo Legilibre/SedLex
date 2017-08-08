@@ -34,7 +34,7 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP['alinea-reference'], self.content[self.filename][self.begin:self.end])
+        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
@@ -43,7 +43,7 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP['sentence-reference'], self.content[self.filename][self.begin:self.end])
+        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_SENTENCE_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
@@ -52,7 +52,7 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP['header1-reference'], self.content[self.filename][self.begin:self.end])
+        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER1_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
@@ -61,7 +61,7 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP['header2-reference'], self.content[self.filename][self.begin:self.end])
+        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER2_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
@@ -70,7 +70,7 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP['header3-reference'], self.content[self.filename][self.begin:self.end])
+        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER3_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
         self.begin = match.start()
         self.end = match.start() + len(match.group(1))
