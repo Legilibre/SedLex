@@ -1,0 +1,12 @@
+---
+
+- hosts: localhost
+  vars:
+    duralex_project_url: "{{ url }}"
+    project_repository: "{{ '{{' }} playbook_dir | dirname {{ '}}' }}"
+  roles:
+    - { role: geerlingguy.git }
+    - { role: bobbyrenwick.pip }
+    - { role: geerlingguy.nodejs, nodejs_version: "7.x", nodejs_npm_global_packages: gitbook-cli }
+    - { role: duralex-sedlex }
+    - { role: pages }

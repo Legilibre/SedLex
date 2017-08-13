@@ -1,0 +1,10 @@
+---
+
+- src: geerlingguy.git
+  version: 1.4.0
+
+- src: bobbyrenwick.pip
+  version: v2.1.1
+
+- src: geerlingguy.nodejs
+  version: 4.1.1

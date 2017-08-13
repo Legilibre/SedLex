@@ -22,12 +22,12 @@ class AddGitLabIssueVisitor(AbstractVisitor):
         if post:
             return
         node['gitlabIssue'] = self.current_issue_link
-        node['commitMessage'] = template.template_string('./template/gitlab/commit_message.j2', {'edit': node})
+        node['commitMessage'] = template.template_string('gitlab/commit_message.j2', {'edit': node})
 
     def visit_node(self, node):
         if 'type' in node and node['type'] == 'article':
-            title = template.template_string('./template/gitlab/issue_title.j2', {'article': node})
-            description = template.template_string('./template/gitlab/issue_description.j2', {'article': node})
+            title = template.template_string('gitlab/issue_title.j2', {'article': node})
+            description = template.template_string('gitlab/issue_description.j2', {'article': node})
             found = False
             for issue in self.issues:
                 if issue.title == title:

@@ -151,29 +151,29 @@ class CreateGitBookVisitor(AbstractVisitor):
                 template_data['cocorico_vote'] = node['cocoricoVote']
 
             template.template_file(
-                './template/gitbook/book.json.j2',
+                'gitbook/book.json.j2',
                 template_data,
                 os.path.join(self.tmp_dir, 'book.json')
             )
             template.template_file(
-                './template/gitbook/styles/website.css.j2',
+                'gitbook/styles/website.css.j2',
                 template_data,
                 os.path.join(self.tmp_dir, 'styles/website.css')
             )
             template.template_file(
-                './template/gitbook/SUMMARY.md.j2',
+                'gitbook/SUMMARY.md.j2',
                 template_data,
                 os.path.join(self.tmp_dir, 'SUMMARY.md')
             )
             template.template_file(
-                './template/gitbook/README.md.j2',
+                'gitbook/README.md.j2',
                 template_data,
                 os.path.join(self.tmp_dir, 'README.md')
             )
             current_article = 0
             for article in articles:
                 template.template_file(
-                    './template/gitbook/article.md.j2',
+                    'gitbook/article.md.j2',
                     self.merge_dicts(template_data, {'current_article': current_article}),
                     os.path.join(self.tmp_dir, 'article-' + str(article['order']) + '.md')
                 )
@@ -182,7 +182,7 @@ class CreateGitBookVisitor(AbstractVisitor):
             current_amendment = 0
             for amendment in amendments:
                 template.template_file(
-                    './template/gitbook/amendment.md.j2',
+                    'gitbook/amendment.md.j2',
                     self.merge_dicts(template_data, {'current_amendment': current_amendment}),
                     os.path.join(self.tmp_dir, 'amendment-' + str(amendment['id']) + '.md')
                 )
@@ -192,7 +192,7 @@ class CreateGitBookVisitor(AbstractVisitor):
             current_law = 0
             for modified in modified_texts:
                 template.template_file(
-                    './template/gitbook/law.md.j2',
+                    'gitbook/law.md.j2',
                     self.merge_dicts(template_data, {
                         'current_law': current_law,
                     }),
@@ -200,7 +200,7 @@ class CreateGitBookVisitor(AbstractVisitor):
                 )
                 for article in modified['articles']:
                     template.template_file(
-                        './template/gitbook/text.md.j2',
+                        'gitbook/text.md.j2',
                         self.merge_dicts(template_data, {
                             'current_law': current_law,
                             'current_article': current_article

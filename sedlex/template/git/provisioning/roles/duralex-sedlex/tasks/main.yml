@@ -1,0 +1,14 @@
+---
+
+- name: Install DuraLex.
+  pip:
+    name: git+git://github.com/Legilibre/DuraLex.git#egg=duralex
+    state: present
+
+- name: Install SedLex.
+  pip:
+    name: git+git://github.com/Legilibre/SedLex.git#egg=sedlex
+    state: present
+
+- name: Fetch DuraLex data.
+  shell: duralex --url "{{ duralex_project_url }}" > /tmp/duralex.json

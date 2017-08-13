@@ -1,0 +1,4 @@
+---
+
+- name: Generate HTML pages.
+  shell: cat /tmp/duralex.json | sedlex --gitbook --gitbook-format html --repository {{ project_repository }}

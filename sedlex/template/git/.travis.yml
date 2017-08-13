@@ -1,0 +1,10 @@
+sudo: required
+dist: trusty
+language: python
+
+install:
+  - pip install ansible
+  - ansible-galaxy install -r requirements.yml
+
+script:
+  - ansible-playbook -i "localhost," -c local provision.yml

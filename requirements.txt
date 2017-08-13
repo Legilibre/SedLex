@@ -1,7 +1,7 @@
--e git+git://github.com/Legilibre/DuraLex.git#egg=duralex
 html5lib
 beautifulsoup4
 requests
 jinja2
 python-gitlab
 PyGithub
+-e git+git://github.com/Legilibre/DuraLex.git#egg=duralex

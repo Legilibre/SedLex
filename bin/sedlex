@@ -8,8 +8,8 @@ import sys
 import argparse
 import urllib
 
-sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '..'))
-sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '../src'))
+sys.path.insert(0, os.path.join(os.path.realpath(os.path.dirname(__file__)), '..'))
+sys.path.insert(0, os.path.join(os.path.realpath(os.path.dirname(__file__)), '../src'))
 
 from duralex.AddParentVisitor import AddParentVisitor
 from duralex.DeleteParentVisitor import DeleteParentVisitor

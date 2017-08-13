@@ -22,12 +22,12 @@ class AddGitHubIssueVisitor(AbstractVisitor):
         if post:
             return
         node['githubIssue'] = self.current_issue_link
-        node['commitMessage'] = template.template_string('./template/github/commit_message.j2', {'edit': node})
+        node['commitMessage'] = template.template_string('github/commit_message.j2', {'edit': node})
 
     def visit_node(self, node):
         if 'type' in node and node['type'] == 'article':
-            title = template.template_string('./template/github/issue_title.j2', { 'article': node })
-            body = template.template_string('./template/github/issue_body.j2', { 'article': node })
+            title = template.template_string('github/issue_title.j2', { 'article': node })
+            body = template.template_string('github/issue_body.j2', { 'article': node })
             found = False
             for issue in self.issues:
                 if issue.title == title:
