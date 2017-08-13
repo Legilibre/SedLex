@@ -8,7 +8,8 @@ setup(
         'beautifulsoup4',
         'requests',
         'jinja2',
-        'python-gitlab'
+        'python-gitlab',
+        'PyGithub'
     ],
     scripts=[
         'bin/sedlex'

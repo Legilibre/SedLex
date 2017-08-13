@@ -4,3 +4,4 @@ beautifulsoup4
 requests
 jinja2
 python-gitlab
+PyGithub
