@@ -9,5 +9,8 @@ setup(
         'requests',
         'jinja2',
         'python-gitlab'
+    ],
+    scripts=[
+        'bin/sedlex'
     ]
 )
