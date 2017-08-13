@@ -11,6 +11,9 @@ setup(
         'python-gitlab',
         'PyGithub'
     ],
+    packages=[
+        'sedlex'
+    ],
     scripts=[
         'bin/sedlex'
     ]
