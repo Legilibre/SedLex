@@ -90,7 +90,7 @@ class AddDiffVisitor(AbstractVisitor):
     def visit_article_reference_node(self, node, post):
         if post:
             return
-        self.set_content_from_file(node['filename'].encode('utf-8'))
+        self.set_content_from_file(node['filename'])
 
     def visit_bill_article_reference_node(self, node, post):
         bill_article = tree.filter_nodes(
@@ -103,7 +103,7 @@ class AddDiffVisitor(AbstractVisitor):
     def visit_article_definition_node(self, node, post):
         if post:
             return
-        self.set_content_from_file(node['filename'].encode('utf-8'))
+        self.set_content_from_file(node['filename'])
 
     def set_content_from_file(self, filename):
         self.filename = filename
@@ -142,8 +142,14 @@ class AddDiffVisitor(AbstractVisitor):
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
                     new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
             elif node['editType'] == 'add':
+                # add an alinea
+                if node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
+                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
+                    new_content += '\n' + '\n'.join([
+                        n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
+                    ])
                 # add an article
-                if node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
+                elif node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
                     def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                     new_content = '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
@@ -155,13 +161,13 @@ class AddDiffVisitor(AbstractVisitor):
                 tofile='\"' + self.filename + '\"',
                 fromfile='\"' + self.filename + '\"'
             )
-            unified_diff = [unicode(d[0:-1], 'utf-8') if isinstance(d, str) else d for d in unified_diff]
+            unified_diff = list(unified_diff)
             if len(unified_diff) > 0:
-                node['diff'] = '\n'.join(unified_diff)
-                node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
+                node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
+                #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
 
             if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
                 self.set_content(self.filename, new_content)
-        except Exception:
+        except Exception as e:
             # FIXME: proper error message
-            pass
+            raise e

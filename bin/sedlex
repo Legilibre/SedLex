@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding=utf-8 -*-
 
 import codecs
@@ -25,6 +25,17 @@ from sedlex.AddCocoricoVoteVisitor import AddCocoricoVoteVisitor
 from sedlex.AddGitHubHistoryLinkVisitor import AddGitHubHistoryLinkVisitor
 from sedlex.AddGitLabHistoryLinkVisitor import AddGitLabHistoryLinkVisitor
 from sedlex.InitializeGitRepositoryVisitor import InitializeGitRepositoryVisitor
+
+def decode(data):
+    try:
+        data = data.decode('utf-8')
+    except:
+        try:
+            data = data.decode('iso-8859-1')
+        except:
+            pass
+
+    return data
 
 def handle_data(data, args):
     tree = json.loads(data)
@@ -63,12 +74,12 @@ def handle_data(data, args):
 
     if not args.quiet:
         DeleteParentVisitor().visit(tree)
-        json_data = json.dumps(tree, sort_keys=True, indent=2, ensure_ascii=False).encode('utf-8')
+        json_data = json.dumps(tree, sort_keys=True, indent=2, ensure_ascii=False)
         sys.stdout.write(json_data)
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='sedlex')
-    parser.add_argument('--file', help='the path of the bill to process', type=argparse.FileType('r'), default='-')
+    parser.add_argument('--file', help='the path of the bill to process', default='-')
     parser.add_argument('--url', help='the URL of the bill to process')
     parser.add_argument('--quiet', action='store_true', help='no stdout output')
     parser.add_argument('--diff', action='store_true', help='compute a diff for each edit')
@@ -92,15 +103,12 @@ def main(argv=None):
     if args.url:
         data = urllib.urlopen(args.url).read()
     elif args.file:
-        data = args.file.read()
-
-    try:
-        data = data.decode('utf8')
-    except:
-        try:
-            data = data.decode('iso-8859-1')
-        except:
-            pass
+        if args.file == '-':
+            data = decode(sys.stdin.buffer.read())
+        else:
+            f = open(args.file, 'rb')
+            data = decode(f.read())
+            f.close()
 
     handle_data(data, args)
 

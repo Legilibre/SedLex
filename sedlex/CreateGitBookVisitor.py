@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from duralex.AbstractVisitor import AbstractVisitor
-from AddCommitMessageVisitor import int_to_roman
+from .AddCommitMessageVisitor import int_to_roman
 import template
 import diff
 
