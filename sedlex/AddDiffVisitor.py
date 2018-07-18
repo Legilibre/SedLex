@@ -36,8 +36,8 @@ class AddDiffVisitor(AbstractVisitor):
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin = match.start()
-        self.end = match.start() + len(match.group(1))
+        self.begin += match.start()
+        self.end = self.begin + len(match.group(1))
 
     def visit_sentence_reference_node(self, node, post):
         if post:
@@ -45,8 +45,8 @@ class AddDiffVisitor(AbstractVisitor):
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_SENTENCE_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin = match.start()
-        self.end = match.start() + len(match.group(1))
+        self.begin += match.start()
+        self.end = self.begin + len(match.group(1))
 
     def visit_header1_reference_node(self, node, post):
         if post:
@@ -54,8 +54,8 @@ class AddDiffVisitor(AbstractVisitor):
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER1_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin = match.start()
-        self.end = match.start() + len(match.group(1))
+        self.begin += match.start()
+        self.end = self.begin + len(match.group(1))
 
     def visit_header2_reference_node(self, node, post):
         if post:
@@ -63,8 +63,8 @@ class AddDiffVisitor(AbstractVisitor):
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER2_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin = match.start()
-        self.end = match.start() + len(match.group(1))
+        self.begin += match.start()
+        self.end = self.begin + len(match.group(1))
 
     def visit_header3_reference_node(self, node, post):
         if post:
@@ -72,8 +72,8 @@ class AddDiffVisitor(AbstractVisitor):
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER3_REFERENCE], self.content[self.filename][self.begin:self.end])
         match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin = match.start()
-        self.end = match.start() + len(match.group(1))
+        self.begin += match.start()
+        self.end = self.begin + len(match.group(1))
 
     def visit_words_reference_node(self, node, post):
         if post:
@@ -81,7 +81,7 @@ class AddDiffVisitor(AbstractVisitor):
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             if 'position' in node and node['position'] == 'after':
-                self.begin = (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
+                self.begin += (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
                     + len(node['children'][0]['words']))
             else:
                 self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
