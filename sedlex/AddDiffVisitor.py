@@ -142,6 +142,10 @@ class AddDiffVisitor(AbstractVisitor):
                                   (' ' if re.match(self.letters, new_words[-1]+old_content[self.end]) else '') + \
                                   old_content[self.end:]
             elif node['editType'] == 'delete':
+                if self.begin > 1 and old_content[self.begin-2:self.begin] == '\n\n':
+                    self.begin -= 2
+                elif self.end+2 < len(old_content) and old_content[self.end:self.end+2] == '\n\n':
+                    self.end += 2
                 new_content = old_content[0:self.begin] + old_content[self.end:]
             elif node['editType'] == 'edit':
                 def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
