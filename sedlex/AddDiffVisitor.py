@@ -142,6 +142,15 @@ class AddDiffVisitor(AbstractVisitor):
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
                     new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
             elif node['editType'] == 'add':
+                # add a word
+                if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
+                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
+                    new_words = def_node['words']
+                    new_content = old_content[0:self.begin] + \
+                                  ('' if new_words[0] == ',' else ' ') + \
+                                  new_words + \
+                                  ('' if old_content[self.begin] == ' ' else ' ') + \
+                                  old_content[self.begin:]
                 # add an alinea
                 if node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
                     def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
