@@ -14,6 +14,7 @@ from duralex.AbstractVisitor import AbstractVisitor
 import duralex.tree as tree
 
 class AddDiffVisitor(AbstractVisitor):
+    letters = re.compile(r'^[a-zA-Z0-9]+$')
     REGEXP = {
         tree.TYPE_HEADER1_REFERENCE     : re.compile(r'([IVXCLDM]+\. - (?:(?:.|\n)(?![IVXCLDM]+\. - ))*)', re.UNICODE),
         tree.TYPE_HEADER2_REFERENCE     : re.compile(r'(\d+\. (?:(?:.|\n)(?!\d+\. ))*)', re.UNICODE),
@@ -133,7 +134,13 @@ class AddDiffVisitor(AbstractVisitor):
                 # replace words
                 def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
+                    new_words = def_node['children'][0]['words']
+                    if self.begin > 0 and old_content[self.begin-1] == ' ' and not re.match(self.letters, new_words[0]):
+                        self.begin -= 1
+                    new_content = old_content[0:self.begin] + \
+                                  new_words + \
+                                  (' ' if re.match(self.letters, new_words[-1]+old_content[self.end]) else '') + \
+                                  old_content[self.end:]
             elif node['editType'] == 'delete':
                 new_content = old_content[0:self.begin] + old_content[self.end:]
             elif node['editType'] == 'edit':
