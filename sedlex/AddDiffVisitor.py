@@ -186,8 +186,9 @@ class AddDiffVisitor(AbstractVisitor):
                 node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
                 #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
 
-            if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
-                self.set_content(self.filename, new_content)
+            # See issue #1: it seems that the source text for each verb is the original text and not the text already modified in earlier changes
+            #if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
+            #    self.set_content(self.filename, new_content)
         except Exception as e:
             # FIXME: proper error message
             raise e
