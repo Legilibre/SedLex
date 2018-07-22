@@ -14,7 +14,6 @@ from duralex.AbstractVisitor import AbstractVisitor
 import duralex.tree as tree
 
 class AddDiffVisitor(AbstractVisitor):
-    letters = re.compile(r'^[a-zA-Z0-9]+$')
     REGEXP = {
         tree.TYPE_HEADER1_REFERENCE     : re.compile(r'([IVXCLDM]+\. - (?:(?:.|\n)(?![IVXCLDM]+\. - ))*)', re.UNICODE),
         tree.TYPE_HEADER2_REFERENCE     : re.compile(r'(\d+\. (?:(?:.|\n)(?!\d+\. ))*)', re.UNICODE),
@@ -128,52 +127,33 @@ class AddDiffVisitor(AbstractVisitor):
 
         old_content = self.content[self.filename]
         new_content = old_content
+        new_words = None
 
         try:
-            if node['editType'] == 'replace':
+            if node['editType'] in ['replace', 'edit']:
                 # replace words
                 def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
                     new_words = def_node['children'][0]['words']
-                    if self.begin > 0 and old_content[self.begin-1] == ' ' and not re.match(self.letters, new_words[0]):
-                        self.begin -= 1
-                    new_content = old_content[0:self.begin] + \
-                                  new_words + \
-                                  (' ' if re.match(self.letters, new_words[-1]+old_content[self.end]) else '') + \
-                                  old_content[self.end:]
             elif node['editType'] == 'delete':
-                if old_content[self.begin-2:self.begin] == '\n\n' and (old_content[self.end:self.end+2] == '\n\n' or self.end == len(old_content)-1):
-                    self.begin -= 2
-                elif self.begin == 0 and old_content[self.end:self.end+2] == '\n\n':
-                    self.end += 2
-                new_content = old_content[0:self.begin] + old_content[self.end:]
-            elif node['editType'] == 'edit':
-                def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
-                # edit words
-                if def_node['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_content = old_content[0:self.begin] + def_node['children'][0]['words'] + old_content[self.end:]
+                new_words = ''
             elif node['editType'] == 'add':
+                def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
-                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
-                    new_words = def_node['words']
-                    new_content = old_content[0:self.begin] + \
-                                  ('' if new_words[0] == ',' else ' ') + \
-                                  new_words + \
-                                  ('' if old_content[self.begin] == ' ' else ' ') + \
-                                  old_content[self.begin:]
+                    new_words = def_node['words'] + old_content[self.begin:self.end] # not sure about the 2nd part - see XVe pl911 article 2
                 # add an alinea
-                if node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
-                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
+                elif node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
                     new_content += '\n' + '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
                     ])
                 # add an article
                 elif node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
-                    def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                     new_content = '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
                     ])
+            if new_words != None:
+                new_content, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
 
             unified_diff = difflib.unified_diff(
                 old_content.splitlines() if old_content != '' else [],
@@ -192,3 +172,46 @@ class AddDiffVisitor(AbstractVisitor):
         except Exception as e:
             # FIXME: proper error message
             raise e
+
+def typography(old_content, new_words, begin, end):
+
+    # Replace simple newlines by double newlines (Markdown syntax for new paragraphs)
+    new_words = re.sub(r'([^\n])\n([^\n])', r'\1\n\n\2', new_words.strip())
+
+    if not old_content:
+        return new_words, begin, end
+
+    right = old_content[end:]
+    left = old_content[:begin]
+
+    # Remove orphan spaces before or after the introduced words
+    if right:
+        right_re = re.search(r'^( *)[^ ]', right)
+        end += len(right_re.group(1)) if right_re else 0
+        right = old_content[end:]
+    if left:
+        left_re = re.search(r'[^ ]( *)$', left)
+        begin -= len(left_re.group(1)) if left_re else 0
+        left = old_content[:begin]
+
+    # Add a sigle space before or after the introduced words depending if we have two letters or point/comma/colon/semicolon + letter
+    if new_words and right and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', new_words[-1]+right[0], flags=re.IGNORECASE):
+        new_words = new_words+' '
+    if new_words and left and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', left[-1]+new_words[0], flags=re.IGNORECASE):
+        new_words = ' '+new_words
+
+    # Remove empty alineas
+    if not new_words:
+        left_re = re.search(r'[^\n](\n{2,})$', left)
+        right_re = re.search(r'^(\n{2,})[^\n]', right)
+        # Do not invert these two if: the specific case of the last alinea removed would not work
+        if left_re and (right_re or re.search(r'^\n*$', right)):
+            begin -= len(left_re.group(1))
+            left = old_content[:begin]
+        elif right_re and (left_re or not left):
+            end += len(right_re.group(1))
+            right = old_content[end:]
+
+    return left+new_words+right, begin, end
+
+# vim: set ts=4 sw=4 sts=4 et:
