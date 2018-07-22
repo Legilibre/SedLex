@@ -35,9 +35,13 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
-        self.begin += match.start()
-        self.end = self.begin + len(match.group(1))
+        if 'position' in node and node['position'] == 'after':
+            match = list(match)[node['order']]
+            self.begin += match.start()
+        else:
+            match = list(match)[node['order'] - 1]
+            self.begin += match.start()
+            self.end = self.begin + len(match.group(1))
 
     def visit_sentence_reference_node(self, node, post):
         if post:
@@ -81,11 +85,11 @@ class AddDiffVisitor(AbstractVisitor):
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             if 'position' in node and node['position'] == 'after':
-                self.begin += (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
-                    + len(node['children'][0]['words']))
+                self.begin += (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'].strip())
+                    + len(node['children'][0]['words'].strip()))
             else:
-                self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'])
-                self.end = self.begin + len(node['children'][0]['words'])
+                self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'].strip())
+                self.end = self.begin + len(node['children'][0]['words'].strip())
 
     def visit_article_reference_node(self, node, post):
         if post:
@@ -149,9 +153,9 @@ class AddDiffVisitor(AbstractVisitor):
                     new_words = def_node['words'] + old_content[self.begin:self.end] # not sure about the 2nd part - see XVe pl911 article 2
                 # add an alinea
                 elif node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
-                    new_content += '\n' + '\n'.join([
+                    new_words = '\n' + '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
-                    ])
+                    ]).strip() + '\n\n' + old_content[self.begin:self.end]
                 # add an article
                 elif node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
                     new_content = '\n'.join([
@@ -203,6 +207,8 @@ def typography(old_content, new_words, begin, end):
     if new_words and right and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', new_words[-1]+right[0], flags=re.IGNORECASE):
         new_words = new_words+' '
     if new_words and left and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', left[-1]+new_words[0], flags=re.IGNORECASE):
+        new_words = ' '+new_words
+    if not new_words and right and left and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', left[-1]+right[0], flags=re.IGNORECASE):
         new_words = ' '+new_words
 
     # Remove empty alineas
