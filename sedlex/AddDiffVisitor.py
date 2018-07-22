@@ -136,7 +136,12 @@ class AddDiffVisitor(AbstractVisitor):
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
                     new_words = def_node['children'][0]['words']
             elif node['editType'] == 'delete':
-                new_words = ''
+                art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
+                other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
+                if art_ref_node and not other_ref_nodes:
+                    new_content = None
+                else:
+                    new_words = ''
             elif node['editType'] == 'add':
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
@@ -156,9 +161,9 @@ class AddDiffVisitor(AbstractVisitor):
                 new_content, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
 
             unified_diff = difflib.unified_diff(
-                old_content.splitlines() if old_content != '' else [],
-                new_content.splitlines() if new_content != '' else [],
-                tofile='\"' + self.filename + '\"',
+                old_content.splitlines() if old_content else [],
+                new_content.splitlines() if new_content else [],
+                tofile=('\"' + self.filename + '\"' if new_content != None else '/dev/null'),
                 fromfile='\"' + self.filename + '\"'
             )
             unified_diff = list(unified_diff)
