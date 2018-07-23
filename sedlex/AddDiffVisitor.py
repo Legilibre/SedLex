@@ -171,8 +171,7 @@ class AddDiffVisitor(AbstractVisitor):
                     node['error'] = '[SedLex] visit_edit_node: no definition node found in editType in [\'replace\', \'edit\']'
                     return
                 def_node = def_node[-1]
-                if def_node['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_words = def_node['children'][0]['words']
+                new_words = def_node['children'][0]['words']
             elif node['editType'] == 'delete':
                 art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
                 other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
