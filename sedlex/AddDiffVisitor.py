@@ -34,12 +34,18 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end])
+        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end]))
         if 'position' in node and node['position'] == 'after':
-            match = list(match)[node['order']]
+            if node['order'] >= len(match):
+                node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(node['order'])+' >= len(match) == '+str(len(match))
+                return
+            match = match[node['order']]
             self.begin += match.start()
         else:
-            match = list(match)[node['order'] - 1]
+            if node['order'] - 1 >= len(match):
+                node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+                return
+            match = match[node['order'] - 1]
             self.begin += match.start()
             self.end = self.begin + len(match.group(1))
 
@@ -47,8 +53,11 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_SENTENCE_REFERENCE], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_SENTENCE_REFERENCE], self.content[self.filename][self.begin:self.end]))
+        if node['order'] - 1 >= len(match):
+            node['error'] = '[SedLex] visit_sentence_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+            return
+        match = match[node['order'] - 1]
         self.begin += match.start()
         self.end = self.begin + len(match.group(1))
 
@@ -56,8 +65,11 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER1_REFERENCE], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER1_REFERENCE], self.content[self.filename][self.begin:self.end]))
+        if node['order'] - 1 >= len(match):
+            node['error'] = '[SedLex] visit_header1_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+            return
+        match = match[node['order'] - 1]
         self.begin += match.start()
         self.end = self.begin + len(match.group(1))
 
@@ -65,8 +77,11 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER2_REFERENCE], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER2_REFERENCE], self.content[self.filename][self.begin:self.end]))
+        if node['order'] - 1 >= len(match):
+            node['error'] = '[SedLex] visit_header2_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+            return
+        match = match[node['order'] - 1]
         self.begin += match.start()
         self.end = self.begin + len(match.group(1))
 
@@ -74,8 +89,11 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        match = re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER3_REFERENCE], self.content[self.filename][self.begin:self.end])
-        match = list(match)[node['order'] - 1 if node['order'] > 0 else node['order']]
+        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER3_REFERENCE], self.content[self.filename][self.begin:self.end]))
+        if node['order'] - 1 >= len(match):
+            node['error'] = '[SedLex] visit_header3_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+            return
+        match = match[node['order'] - 1]
         self.begin += match.start()
         self.end = self.begin + len(match.group(1))
 
@@ -84,12 +102,12 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
+            words = node['children'][0]['words'].strip()
             if 'position' in node and node['position'] == 'after':
-                self.begin += (self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'].strip())
-                    + len(node['children'][0]['words'].strip()))
+                self.begin += self.content[self.filename][self.begin:self.end].find(words) + len(words)
             else:
-                self.begin += self.content[self.filename][self.begin:self.end].find(node['children'][0]['words'].strip())
-                self.end = self.begin + len(node['children'][0]['words'].strip())
+                self.begin += self.content[self.filename][self.begin:self.end].find(words)
+                self.end = self.begin + len(words)
 
     def visit_article_reference_node(self, node, post):
         if post:
@@ -129,14 +147,30 @@ class AddDiffVisitor(AbstractVisitor):
             self.end = -1
             return
 
-        old_content = self.content[self.filename]
+        article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
+        if not article_reference_node:
+            node['error'] = '[SedLex] visit_edit_node: no article reference node'
+            return
+        if len(article_reference_node) > 1:
+            node['error'] = '[SedLex] visit_edit_node: multiple article reference nodes'
+            return
+        filename = article_reference_node[0]['filename']
+        if filename not in self.content:
+            node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
+            return
+
+        old_content = self.content[filename]
         new_content = old_content
         new_words = None
 
         try:
             if node['editType'] in ['replace', 'edit']:
                 # replace words
-                def_node = parser.filter_nodes(node, lambda x: tree.is_definition(x))[-1]
+                def_node = parser.filter_nodes(node, tree.is_definition)
+                if not def_node:
+                    node['error'] = '[SedLex] visit_edit_node: no definition node found in editType in [\'replace\', \'edit\']'
+                    return
+                def_node = def_node[-1]
                 if def_node['type'] == tree.TYPE_WORD_DEFINITION:
                     new_words = def_node['children'][0]['words']
             elif node['editType'] == 'delete':
@@ -150,7 +184,7 @@ class AddDiffVisitor(AbstractVisitor):
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_words = def_node['words'] + old_content[self.begin:self.end] # not sure about the 2nd part - see XVe pl911 article 2
+                    new_words = def_node['words'] + old_content[self.begin:self.end]
                 # add an alinea
                 elif node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
                     new_words = '\n' + '\n'.join([
