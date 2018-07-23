@@ -139,7 +139,7 @@ class AddDiffVisitor(AbstractVisitor):
     def set_content(self, key, content):
         self.content[key] = content
         self.begin = 0
-        self.end = len(content)
+        self.end = -1
 
     def visit_edit_node(self, node, post):
         if not post:
@@ -187,22 +187,30 @@ class AddDiffVisitor(AbstractVisitor):
                     new_words = def_node['words'] + old_content[self.begin:self.end]
                 # add an alinea
                 elif node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
+                    art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
+                    other_ref_nodes = parser.filter_nodes(node, lambda x: tree.is_reference(x) and x['type'] not in [tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
+                    if art_ref_node and not other_ref_nodes:
+                        self.begin = self.end
                     new_words = '\n' + '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
-                    ]).strip() + '\n\n' + old_content[self.begin:self.end]
+                    ]).strip()
+                    if self.begin < self.end:
+                        new_words += '\n' + old_content[self.begin:self.end]
                 # add an article
                 elif node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
-                    new_content = '\n'.join([
+                    new_words = '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
                     ])
+                    self.begin = 0
+                    self.end = -1
             if new_words != None:
                 new_content, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
 
             unified_diff = difflib.unified_diff(
                 old_content.splitlines() if old_content else [],
                 new_content.splitlines() if new_content else [],
-                tofile=('\"' + self.filename + '\"' if new_content != None else '/dev/null'),
-                fromfile='\"' + self.filename + '\"'
+                tofile=('\"' + filename + '\"' if new_content != None else '/dev/null'),
+                fromfile='\"' + filename + '\"'
             )
             unified_diff = list(unified_diff)
             if len(unified_diff) > 0:
@@ -219,7 +227,8 @@ class AddDiffVisitor(AbstractVisitor):
 def typography(old_content, new_words, begin, end):
 
     # Replace simple newlines by double newlines (Markdown syntax for new paragraphs)
-    new_words = re.sub(r'([^\n])\n([^\n])', r'\1\n\n\2', new_words.strip())
+    new_words = re.sub(r'(^|[^\n])\n([^\n]|$)', r'\1\n\n\2', new_words.strip(' '))
+    new_words = re.sub(r'(^|[^\n])\n{3,}([^\n]|$)', r'\1\n\n\2', new_words)
 
     if not old_content:
         return new_words, begin, end
