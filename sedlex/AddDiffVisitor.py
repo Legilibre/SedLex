@@ -155,6 +155,7 @@ class AddDiffVisitor(AbstractVisitor):
             node['error'] = '[SedLex] visit_edit_node: multiple article reference nodes'
             return
         filename = article_reference_node[0]['filename']
+        id = article_reference_node[0]['id']
         if filename not in self.content:
             node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
             return
@@ -202,14 +203,19 @@ class AddDiffVisitor(AbstractVisitor):
                     ])
                     self.begin = 0
                     self.end = -1
+                    # Note the following instructions are a specific case when an article-ref is replaced by a new article-def, it would not work if there is no article-ref
+                    if 'id' in node['children'][1] and node['children'][1]['id'] != id:
+                        id = node['children'][1]['id']
+                        filename = re.sub(r'Article_(.*)\.md$', 'Article_'+id+'.md', filename)
+                        old_content = None
             if new_words != None:
                 new_content, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
 
             unified_diff = difflib.unified_diff(
                 old_content.splitlines() if old_content else [],
                 new_content.splitlines() if new_content else [],
-                tofile=('\"' + filename + '\"' if new_content != None else '/dev/null'),
-                fromfile='\"' + filename + '\"'
+                tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
+                fromfile='\"' + filename + '\"' if old_content != None else '/dev/null'
             )
             unified_diff = list(unified_diff)
             if len(unified_diff) > 0:
