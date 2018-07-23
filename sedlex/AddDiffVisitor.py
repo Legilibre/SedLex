@@ -185,6 +185,8 @@ class AddDiffVisitor(AbstractVisitor):
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
                     new_words = def_node['words'] + old_content[self.begin:self.end]
+                elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
+                    new_words = old_content[self.begin:self.end] + ' ' + def_node['words']
                 # add an alinea
                 elif node['children'][1]['type'] == tree.TYPE_ALINEA_DEFINITION:
                     art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
