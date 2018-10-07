@@ -30,11 +30,8 @@ class AddDiffVisitor(AbstractVisitor):
         self.end = -1
         super(AddDiffVisitor, self).__init__()
 
-    def visit_alinea_reference_node(self, node, post):
-        if post:
-            return
-
-        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_ALINEA_REFERENCE], self.content[self.filename][self.begin:self.end]))
+    def compute_location(self, type, typestring):
+        match = list(re.finditer(AddDiffVisitor.REGEXP[type], self.content[self.filename][self.begin:self.end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] >= len(match):
                 node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(node['order'])+' >= len(match) == '+str(len(match))
@@ -43,59 +40,36 @@ class AddDiffVisitor(AbstractVisitor):
             self.begin += match.start()
         else:
             if node['order'] - 1 >= len(match):
-                node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+                node['error'] = '[SedLex] visit_'+typestring+'_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
                 return
             match = match[node['order'] - 1]
             self.begin += match.start()
             self.end = self.begin + len(match.group(1))
 
+    def visit_alinea_reference_node(self, node, post):
+        if post:
+            return
+        compute_location(tree.TYPE_ALINEA_REFERENCE, 'alinea_reference')
+
     def visit_sentence_reference_node(self, node, post):
         if post:
             return
-
-        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_SENTENCE_REFERENCE], self.content[self.filename][self.begin:self.end]))
-        if node['order'] - 1 >= len(match):
-            node['error'] = '[SedLex] visit_sentence_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
-            return
-        match = match[node['order'] - 1]
-        self.begin += match.start()
-        self.end = self.begin + len(match.group(1))
+        compute_location(tree.TYPE_SENTENCE_REFERENCE, 'sentence_reference')
 
     def visit_header1_reference_node(self, node, post):
         if post:
             return
-
-        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER1_REFERENCE], self.content[self.filename][self.begin:self.end]))
-        if node['order'] - 1 >= len(match):
-            node['error'] = '[SedLex] visit_header1_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
-            return
-        match = match[node['order'] - 1]
-        self.begin += match.start()
-        self.end = self.begin + len(match.group(1))
+        compute_location(tree.TYPE_HEADER1_REFERENCE, 'header1_reference')
 
     def visit_header2_reference_node(self, node, post):
         if post:
             return
-
-        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER2_REFERENCE], self.content[self.filename][self.begin:self.end]))
-        if node['order'] - 1 >= len(match):
-            node['error'] = '[SedLex] visit_header2_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
-            return
-        match = match[node['order'] - 1]
-        self.begin += match.start()
-        self.end = self.begin + len(match.group(1))
+        compute_location(tree.TYPE_HEADER2_REFERENCE, 'header2_reference')
 
     def visit_header3_reference_node(self, node, post):
         if post:
             return
-
-        match = list(re.finditer(AddDiffVisitor.REGEXP[tree.TYPE_HEADER3_REFERENCE], self.content[self.filename][self.begin:self.end]))
-        if node['order'] - 1 >= len(match):
-            node['error'] = '[SedLex] visit_header3_reference_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
-            return
-        match = match[node['order'] - 1]
-        self.begin += match.start()
-        self.end = self.begin + len(match.group(1))
+        compute_location(tree.TYPE_HEADER2_REFERENCE, 'header3_reference')
 
     def visit_words_reference_node(self, node, post):
         if post:
