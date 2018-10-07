@@ -30,7 +30,7 @@ class AddDiffVisitor(AbstractVisitor):
         self.end = -1
         super(AddDiffVisitor, self).__init__()
 
-    def compute_location(self, type, typestring):
+    def compute_location(self, type, typestring, node):
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], self.content[self.filename][self.begin:self.end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] >= len(match):
@@ -49,27 +49,27 @@ class AddDiffVisitor(AbstractVisitor):
     def visit_alinea_reference_node(self, node, post):
         if post:
             return
-        compute_location(tree.TYPE_ALINEA_REFERENCE, 'alinea_reference')
+        self.compute_location(tree.TYPE_ALINEA_REFERENCE, 'alinea_reference', node)
 
     def visit_sentence_reference_node(self, node, post):
         if post:
             return
-        compute_location(tree.TYPE_SENTENCE_REFERENCE, 'sentence_reference')
+        self.compute_location(tree.TYPE_SENTENCE_REFERENCE, 'sentence_reference', node)
 
     def visit_header1_reference_node(self, node, post):
         if post:
             return
-        compute_location(tree.TYPE_HEADER1_REFERENCE, 'header1_reference')
+        self.compute_location(tree.TYPE_HEADER1_REFERENCE, 'header1_reference', node)
 
     def visit_header2_reference_node(self, node, post):
         if post:
             return
-        compute_location(tree.TYPE_HEADER2_REFERENCE, 'header2_reference')
+        self.compute_location(tree.TYPE_HEADER2_REFERENCE, 'header2_reference', node)
 
     def visit_header3_reference_node(self, node, post):
         if post:
             return
-        compute_location(tree.TYPE_HEADER2_REFERENCE, 'header3_reference')
+        self.compute_location(tree.TYPE_HEADER2_REFERENCE, 'header3_reference', node)
 
     def visit_words_reference_node(self, node, post):
         if post:
