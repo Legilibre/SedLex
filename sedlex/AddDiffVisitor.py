@@ -117,6 +117,8 @@ class AddDiffVisitor(AbstractVisitor):
 
     def visit_edit_node(self, node, post):
         if not post:
+            self.filename = ''
+            self.content = {}
             self.begin = 0
             self.end = -1
             return
@@ -137,6 +139,7 @@ class AddDiffVisitor(AbstractVisitor):
         old_content = self.content[filename]
         new_content = old_content
         new_words = None
+        diff = (None, None, None)
 
         try:
             if node['editType'] in ['replace', 'edit']:
@@ -147,6 +150,7 @@ class AddDiffVisitor(AbstractVisitor):
                     return
                 def_node = def_node[-1]
                 new_words = def_node['children'][0]['words']
+                diff = (self.begin, old_content[self.begin:self.end], new_words)
             elif node['editType'] == 'delete':
                 art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
                 other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
@@ -154,13 +158,16 @@ class AddDiffVisitor(AbstractVisitor):
                     new_content = None
                 else:
                     new_words = ''
+                diff = (self.begin, old_content[self.begin:self.end], None)
             elif node['editType'] == 'add':
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
                     new_words = def_node['words'] + old_content[self.begin:self.end]
+                    diff = (self.begin, None, def_node['words'])
                 elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
                     new_words = old_content[self.begin:self.end] + ' ' + def_node['words']
+                    diff = (self.end, None, def_node['words'])
                 # add an alinea
                 elif node['children'][1]['type'] in [tree.TYPE_ALINEA_DEFINITION, tree.TYPE_HEADER1_DEFINITION, tree.TYPE_HEADER2_DEFINITION, tree.TYPE_HEADER3_DEFINITION]:
                     art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
@@ -170,6 +177,7 @@ class AddDiffVisitor(AbstractVisitor):
                     new_words = '\n' + '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
                     ]).strip()
+                    diff = (self.begin, None, new_words)
                     if self.begin < self.end:
                         new_words += '\n' + old_content[self.begin:self.end]
                 # add an article
@@ -179,24 +187,40 @@ class AddDiffVisitor(AbstractVisitor):
                     ])
                     self.begin = 0
                     self.end = -1
+                    diff = (self.begin, None, new_words)
                     # Note the following instructions are a specific case when an article-ref is replaced by a new article-def, it would not work if there is no article-ref
                     if 'id' in node['children'][1] and node['children'][1]['id'] != id:
                         id = node['children'][1]['id']
                         filename = re.sub(r'Article_(.*)\.md$', 'Article_'+id+'.md', filename)
                         old_content = None
             if new_words != None:
-                new_content, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
+                new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
+                if diff[1]:
+                    diff = (self.begin, old_content[self.begin:self.end], new_words)
 
             unified_diff = difflib.unified_diff(
                 old_content.splitlines() if old_content else [],
                 new_content.splitlines() if new_content else [],
                 tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
-                fromfile='\"' + filename + '\"' if old_content != None else '/dev/null'
+                fromfile='\"' + filename + '\"' if old_content else '/dev/null'
             )
             unified_diff = list(unified_diff)
             if len(unified_diff) > 0:
                 node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
                 #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
+            if diff[1] or diff[2]:
+                node['exactDiff'] = '--- ' + ('"' + filename + '"' if old_content else '/dev/null') + '\n' + \
+                                    '+++ ' + ('"' + filename + '"' if new_content != None else '/dev/null') + '\n'
+                if diff[1] and diff[2]:
+                    node['exactDiff'] += '@@ -%d,%d +%d,%d @@' %(diff[0]+1,len(diff[1]),diff[0]+1,len(diff[2]))
+                elif diff[1]:
+                    node['exactDiff'] += '@@ -%d,%d +%d,0 @@' %(diff[0]+1,len(diff[1]),diff[0]+1)
+                elif diff[2]:
+                    node['exactDiff'] += '@@ -%d,0 +%d,%d @@' %(diff[0]+1,diff[0]+1,len(diff[2]))
+                if diff[1]:
+                    node['exactDiff'] += '\n-' + diff[1].replace('\n','\n+')
+                if diff[2]:
+                    node['exactDiff'] += '\n+' + diff[2].replace('\n','\n+')
 
             # See issue #1: it seems that the source text for each verb is the original text and not the text already modified in earlier changes
             #if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
@@ -212,7 +236,7 @@ def typography(old_content, new_words, begin, end):
     new_words = re.sub(r'(^|[^\n])\n{3,}([^\n]|$)', r'\1\n\n\2', new_words)
 
     if not old_content:
-        return new_words, begin, end
+        return new_words, '', new_words, '', begin, end
 
     right = old_content[end:]
     left = old_content[:begin]
@@ -247,6 +271,6 @@ def typography(old_content, new_words, begin, end):
             end += len(right_re.group(1))
             right = old_content[end:]
 
-    return left+new_words+right, begin, end
+    return left+new_words+right, left, new_words, right, begin, end
 
 # vim: set ts=4 sw=4 sts=4 et:
