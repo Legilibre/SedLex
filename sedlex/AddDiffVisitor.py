@@ -198,9 +198,11 @@ class AddDiffVisitor(AbstractVisitor):
                 if diff[1]:
                     diff = (self.begin, old_content[self.begin:self.end], new_words)
 
+            old_content_list = old_content.splitlines() if old_content else []
+            new_content_list = new_content.splitlines() if new_content else []
             unified_diff = difflib.unified_diff(
-                old_content.splitlines() if old_content else [],
-                new_content.splitlines() if new_content else [],
+                old_content_list,
+                new_content_list,
                 tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
                 fromfile='\"' + filename + '\"' if old_content else '/dev/null'
             )
@@ -221,6 +223,7 @@ class AddDiffVisitor(AbstractVisitor):
                     node['exactDiff'] += '\n-' + diff[1].replace('\n','\n+')
                 if diff[2]:
                     node['exactDiff'] += '\n+' + diff[2].replace('\n','\n+')
+            node['text'] = old_content
 
             # See issue #1: it seems that the source text for each verb is the original text and not the text already modified in earlier changes
             #if node['parent']['type'] != tree.TYPE_AMENDMENT or node['parent']['status'] == 'approved':
