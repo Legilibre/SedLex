@@ -33,12 +33,16 @@ class AddDiffVisitor(AbstractVisitor):
     def compute_location(self, type, typestring, node):
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], self.content[self.filename][self.begin:self.end]))
         if 'position' in node and node['position'] == 'after':
+            if node['order'] < 0:
+                node['order'] += len(match)+1
             if node['order'] >= len(match):
                 node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(node['order'])+' >= len(match) == '+str(len(match))
                 return
             match = match[node['order']]
             self.begin += match.start()
         else:
+            if node['order'] < 0:
+                node['order'] += len(match)+1
             if node['order'] - 1 >= len(match):
                 node['error'] = '[SedLex] visit_'+typestring+'_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
                 return
@@ -197,6 +201,12 @@ class AddDiffVisitor(AbstractVisitor):
                 new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
                 if diff[1]:
                     diff = (self.begin, old_content[self.begin:self.end], new_words)
+                    new_begin = 0
+                    if old_content[self.begin] == ' ' and new_words[0] == ' ':
+                        diff = (self.begin+new_begin, old_content[self.begin+1:self.end], new_words[1:])
+                        new_begin = 1
+                    if old_content[self.end-1] == ' ' and new_words[-1] == ' ':
+                        diff = (self.begin+new_begin, old_content[self.begin+new_begin:self.end-1], new_words[new_begin:-1])
 
             old_content_list = old_content.splitlines() if old_content else []
             new_content_list = new_content.splitlines() if new_content else []
@@ -220,7 +230,7 @@ class AddDiffVisitor(AbstractVisitor):
                 elif diff[2]:
                     node['exactDiff'] += '@@ -%d,0 +%d,%d @@' %(diff[0]+1,diff[0]+1,len(diff[2]))
                 if diff[1]:
-                    node['exactDiff'] += '\n-' + diff[1].replace('\n','\n+')
+                    node['exactDiff'] += '\n-' + diff[1].replace('\n','\n-')
                 if diff[2]:
                     node['exactDiff'] += '\n+' + diff[2].replace('\n','\n+')
             node['text'] = old_content
