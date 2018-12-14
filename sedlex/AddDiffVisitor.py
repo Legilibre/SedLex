@@ -223,6 +223,8 @@ class AddDiffVisitor(AbstractVisitor):
             if diff[1] or diff[2]:
                 node['exactDiff'] = '--- ' + ('"' + filename + '"' if old_content else '/dev/null') + '\n' + \
                                     '+++ ' + ('"' + filename + '"' if new_content != None else '/dev/null') + '\n'
+                if diff[0] < 0:
+                    diff = (diff[0]+len(old_content), diff[1], diff[2])
                 if diff[1] and diff[2]:
                     node['exactDiff'] += '@@ -%d,%d +%d,%d @@' %(diff[0]+1,len(diff[1]),diff[0]+1,len(diff[2]))
                 elif diff[1]:
