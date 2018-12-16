@@ -23,15 +23,22 @@ class AddDiffVisitor(AbstractVisitor):
         tree.TYPE_WORD_REFERENCE        : re.compile(r'(\b\w.*?\b)', re.UNICODE)
     }
 
-    def __init__(self):
+    def __init__(self, text=None):
         self.filename = ''
         self.content = {}
         self.begin = 0
         self.end = -1
+        self.text = text
         super(AddDiffVisitor, self).__init__()
 
     def compute_location(self, type, typestring, node):
-        match = list(re.finditer(AddDiffVisitor.REGEXP[type], self.content[self.filename][self.begin:self.end]))
+        if self.filename in self.content:
+            content = self.content[self.filename]
+        elif self.text:
+            content = self.text
+        else:
+            raise ValueError
+        match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:self.end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
                 node['order'] += len(match)+1
@@ -79,12 +86,19 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
+        if self.filename in self.content:
+            content = self.content[self.filename]
+        elif self.text:
+            content = self.text
+        else:
+            raise ValueError
+
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
             if 'position' in node and node['position'] == 'after':
-                self.begin += self.content[self.filename][self.begin:self.end].find(words) + len(words)
+                self.begin += content[self.begin:self.end].find(words) + len(words)
             else:
-                self.begin += self.content[self.filename][self.begin:self.end].find(words)
+                self.begin += content[self.begin:self.end].find(words)
                 self.end = self.begin + len(words)
 
     def visit_article_reference_node(self, node, post):
@@ -128,19 +142,26 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
-        if not article_reference_node:
+        if not article_reference_node and not self.text:
             node['error'] = '[SedLex] visit_edit_node: no article reference node'
             return
         if len(article_reference_node) > 1:
             node['error'] = '[SedLex] visit_edit_node: multiple article reference nodes'
             return
-        filename = article_reference_node[0]['filename']
-        id = article_reference_node[0]['id']
-        if filename not in self.content:
+
+        filename = 'unnamed article'
+        if article_reference_node:
+            filename = article_reference_node[0]['filename']
+            id = article_reference_node[0]['id']
+
+        if filename in self.content:
+            old_content = self.content[filename]
+        elif self.text:
+            old_content = self.text
+        else:
             node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
             return
 
-        old_content = self.content[filename]
         new_content = old_content
         new_words = None
         diff = (None, None, None)
