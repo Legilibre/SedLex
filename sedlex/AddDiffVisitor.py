@@ -222,12 +222,9 @@ class AddDiffVisitor(AbstractVisitor):
                 new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
                 if diff[1]:
                     diff = (self.begin, old_content[self.begin:self.end], new_words)
-                    new_begin = 0
-                    if old_content[self.begin] == ' ' and new_words[0] == ' ':
-                        diff = (self.begin+new_begin, old_content[self.begin+1:self.end], new_words[1:])
-                        new_begin = 1
-                    if old_content[self.end-1] == ' ' and new_words[-1] == ' ':
-                        diff = (self.begin+new_begin, old_content[self.begin+new_begin:self.end-1], new_words[new_begin:-1])
+                else:
+                    new_content_bis, left_bis, new_words_bis, right_bis, begin_bis, end_bis = typography(old_content, diff[2], diff[0], diff[0])
+                    diff = (begin_bis, old_content[begin_bis:end_bis], new_words_bis)
 
             old_content_list = old_content.splitlines() if old_content else []
             new_content_list = new_content.splitlines() if new_content else []
@@ -278,14 +275,20 @@ def typography(old_content, new_words, begin, end):
     left = old_content[:begin]
 
     # Remove orphan spaces before or after the introduced words
+    left_spaces = ''
+    right_spaces = ''
     if right:
         right_re = re.search(r'^( *)[^ ]', right)
-        end += len(right_re.group(1)) if right_re else 0
-        right = old_content[end:]
+        if right_re:
+            right_spaces = right_re.group(1)
+            end += len(right_spaces)
+            right = old_content[end:]
     if left:
         left_re = re.search(r'[^ ]( *)$', left)
-        begin -= len(left_re.group(1)) if left_re else 0
-        left = old_content[:begin]
+        if left_re:
+            left_spaces = left_re.group(1)
+            begin -= len(left_spaces)
+            left = old_content[:begin]
 
     # Add a sigle space before or after the introduced words depending if we have two letters or point/comma/colon/semicolon + letter
     if new_words and right and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', new_words[-1]+right[0], flags=re.IGNORECASE):
@@ -294,6 +297,16 @@ def typography(old_content, new_words, begin, end):
         new_words = ' '+new_words
     if not new_words and right and left and re.match(r'^[.,:;]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ]+$', left[-1]+right[0], flags=re.IGNORECASE):
         new_words = ' '+new_words
+
+    # Transfer spaces to old_content if common with the new_words to minimise the length of new_words
+    if new_words and new_words[0] == ' ' and left_spaces:
+        new_words = new_words[1:]
+        begin += 1
+        left = old_content[:begin]
+    if new_words and new_words[-1] == ' ' and right_spaces:
+        new_words = new_words[:-1]
+        end -= 1
+        right = old_content[end:]
 
     # Remove empty alineas
     if not new_words:
