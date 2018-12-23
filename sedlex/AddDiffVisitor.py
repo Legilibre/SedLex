@@ -38,7 +38,8 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
-        match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:self.end]))
+        end = self.end if self.end >= 0 else self.end + len(content)+1
+        match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
                 node['order'] += len(match)+1
@@ -92,16 +93,17 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
+        end = self.end if self.end >= 0 else self.end + len(content)+1
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
-            location = content[self.begin:self.end].find(words)
+            location = content[self.begin:end].find(words)
             if location == -1:
                 raise Exception('words not found')
             if 'position' in node and node['position'] == 'after':
-                self.begin += content[self.begin:self.end].find(words) + len(words)
+                self.begin += content[self.begin:end].find(words) + len(words)
             else:
-                self.begin += content[self.begin:self.end].find(words)
+                self.begin += content[self.begin:end].find(words)
                 self.end = self.begin + len(words)
 
     def visit_article_reference_node(self, node, post):
@@ -178,6 +180,7 @@ class AddDiffVisitor(AbstractVisitor):
         new_content = old_content
         new_words = None
         diff = (None, None, None)
+        end = self.end if self.end >= 0 else self.end + len(old_content)+1
 
         try:
             if node['editType'] in ['replace', 'edit']:
@@ -188,7 +191,7 @@ class AddDiffVisitor(AbstractVisitor):
                     return
                 def_node = def_node[-1]
                 new_words = def_node['children'][0]['words']
-                diff = (self.begin, old_content[self.begin:self.end], new_words)
+                diff = (self.begin, old_content[self.begin:end], new_words)
             elif node['editType'] == 'delete':
                 art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
                 other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
@@ -196,28 +199,28 @@ class AddDiffVisitor(AbstractVisitor):
                     new_content = None
                 else:
                     new_words = ''
-                diff = (self.begin, old_content[self.begin:self.end], None)
+                diff = (self.begin, old_content[self.begin:end], None)
             elif node['editType'] == 'add':
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_words = def_node['words'] + old_content[self.begin:self.end]
+                    new_words = def_node['words'] + old_content[self.begin:end]
                     diff = (self.begin, None, def_node['words'])
                 elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
-                    new_words = old_content[self.begin:self.end] + ' ' + def_node['words']
-                    diff = (self.end, None, def_node['words'])
+                    new_words = old_content[self.begin:end] + ' ' + def_node['words']
+                    diff = (end, None, def_node['words'])
                 # add an alinea
                 elif node['children'][1]['type'] in [tree.TYPE_ALINEA_DEFINITION, tree.TYPE_HEADER1_DEFINITION, tree.TYPE_HEADER2_DEFINITION, tree.TYPE_HEADER3_DEFINITION]:
                     art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
                     other_ref_nodes = parser.filter_nodes(node, lambda x: tree.is_reference(x) and x['type'] not in [tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
                     if art_ref_node and not other_ref_nodes:
-                        self.begin = self.end
+                        self.begin = end
                     new_words = '\n' + '\n'.join([
                         n['words'] for n in parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)
                     ]).strip()
                     diff = (self.begin, None, new_words)
-                    if self.begin < self.end:
-                        new_words += '\n' + old_content[self.begin:self.end]
+                    if self.begin < end:
+                        new_words += '\n' + old_content[self.begin:end]
                 # add an article
                 elif node['children'][1]['type'] == tree.TYPE_ARTICLE_DEFINITION:
                     new_words = '\n'.join([
@@ -234,7 +237,7 @@ class AddDiffVisitor(AbstractVisitor):
             if new_words != None:
                 new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
                 if diff[1]:
-                    diff = (self.begin, old_content[self.begin:self.end], new_words)
+                    diff = (self.begin, old_content[self.begin:end], new_words)
                 elif old_content != None:
                     new_content_bis, left_bis, new_words_bis, right_bis, begin_bis, end_bis = typography(old_content, diff[2], diff[0], diff[0])
                     diff = (begin_bis, old_content[begin_bis:end_bis], new_words_bis)
