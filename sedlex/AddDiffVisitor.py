@@ -97,13 +97,13 @@ class AddDiffVisitor(AbstractVisitor):
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
-            location = content[self.begin:end].find(words)
+            location = content[self.begin:end].lower().find(words.lower())
             if location == -1:
                 raise Exception('words not found')
             if 'position' in node and node['position'] == 'after':
-                self.begin += content[self.begin:end].find(words) + len(words)
+                self.begin += content[self.begin:end].lower().find(words.lower()) + len(words)
             else:
-                self.begin += content[self.begin:end].find(words)
+                self.begin += content[self.begin:end].lower().find(words.lower())
                 self.end = self.begin + len(words)
 
     def visit_article_reference_node(self, node, post):
