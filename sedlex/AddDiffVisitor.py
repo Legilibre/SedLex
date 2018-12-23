@@ -95,6 +95,9 @@ class AddDiffVisitor(AbstractVisitor):
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
+            location = content[self.begin:self.end].find(words)
+            if location == -1:
+                raise Exception('words not found')
             if 'position' in node and node['position'] == 'after':
                 self.begin += content[self.begin:self.end].find(words) + len(words)
             else:
@@ -142,7 +145,11 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
-        if not article_reference_node and not self.text:
+        article_definition_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_DEFINITION)
+        editTypeArticle = 'edit'
+        if node['editType'] == 'add' and len(article_definition_node):
+            editTypeArticle = 'add'
+        if not article_reference_node and not self.text and editTypeArticle == 'edit':
             node['error'] = '[SedLex] visit_edit_node: no article reference node'
             return
         if len(article_reference_node) > 1:
@@ -153,14 +160,20 @@ class AddDiffVisitor(AbstractVisitor):
         if article_reference_node:
             filename = article_reference_node[0]['filename']
             id = article_reference_node[0]['id']
+        elif article_definition_node:
+            filename = article_definition_node[0]['filename']
+            id = article_definition_node[0]['id']
 
-        if filename in self.content:
-            old_content = self.content[filename]
-        elif self.text:
-            old_content = self.text
+        if editTypeArticle == 'edit':
+            if filename in self.content:
+                old_content = self.content[filename]
+            elif self.text:
+                old_content = self.text
+            else:
+                node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
+                return
         else:
-            node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
-            return
+            old_content = None
 
         new_content = old_content
         new_words = None
@@ -222,7 +235,7 @@ class AddDiffVisitor(AbstractVisitor):
                 new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
                 if diff[1]:
                     diff = (self.begin, old_content[self.begin:self.end], new_words)
-                else:
+                elif old_content != None:
                     new_content_bis, left_bis, new_words_bis, right_bis, begin_bis, end_bis = typography(old_content, diff[2], diff[0], diff[0])
                     diff = (begin_bis, old_content[begin_bis:end_bis], new_words_bis)
 
