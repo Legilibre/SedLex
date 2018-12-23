@@ -245,23 +245,32 @@ class AddDiffVisitor(AbstractVisitor):
                 old_content_list,
                 new_content_list,
                 tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
-                fromfile='\"' + filename + '\"' if old_content else '/dev/null'
+                fromfile='\"' + filename + '\"' if old_content != None else '/dev/null'
             )
             unified_diff = list(unified_diff)
             if len(unified_diff) > 0:
                 node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
                 #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
             if diff[1] or diff[2]:
-                node['exactDiff'] = '--- ' + ('"' + filename + '"' if old_content else '/dev/null') + '\n' + \
+                node['exactDiff'] = '--- ' + ('"' + filename + '"' if old_content != None else '/dev/null') + '\n' + \
                                     '+++ ' + ('"' + filename + '"' if new_content != None else '/dev/null') + '\n'
                 if diff[0] < 0:
                     diff = (diff[0]+len(old_content), diff[1], diff[2])
-                if diff[1] and diff[2]:
+                # Modify a part of the text
+                if diff[1] != None and diff[2] != None:
                     node['exactDiff'] += '@@ -%d,%d +%d,%d @@' %(diff[0]+1,len(diff[1]),diff[0]+1,len(diff[2]))
-                elif diff[1]:
-                    node['exactDiff'] += '@@ -%d,%d +%d,0 @@' %(diff[0]+1,len(diff[1]),diff[0]+1)
-                elif diff[2]:
-                    node['exactDiff'] += '@@ -%d,0 +%d,%d @@' %(diff[0]+1,diff[0]+1,len(diff[2]))
+                # Remove the entire article
+                elif diff[1] != None and diff[2] == None:
+                    if diff[0] != 0:
+                        raise Exception('Article removed but index was not at the beginning')
+                    node['exactDiff'] += '@@ -1,%d +0,0 @@' %(len(diff[1]))
+                # Add an entire article
+                elif diff[1] == None and diff[2] != None:
+                    if diff[0] != 0:
+                        raise Exception('Article added but index was not at the beginning')
+                    node['exactDiff'] += '@@ -0,0 +1,%d @@' %(len(diff[2]))
+                else:
+                    raise Exception('Empty diff, should not happen')
                 if diff[1]:
                     node['exactDiff'] += '\n-' + diff[1].replace('\n','\n-')
                 if diff[2]:
