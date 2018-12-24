@@ -15,7 +15,8 @@ class AddArcheoLexFilenameVisitor(AbstractVisitor):
         node_law = node
         while 'parent' in node_law and node_law['type'] != tree.TYPE_CODE_REFERENCE and node_law['type'] != tree.TYPE_LAW_REFERENCE:
             node_law = node_law['parent']
-        node['filename'] = os.path.join(node_law['repository'], 'Article_' + node['id'].replace(' ', '_') + '.md')
+        if 'repository' in node_law:
+            node['filename'] = os.path.join(node_law['repository'], 'Article_' + node['id'].replace(' ', '_') + '.md')
 
     def visit_article_definition_node(self, node, post):
         if post:
@@ -29,8 +30,13 @@ class AddArcheoLexFilenameVisitor(AbstractVisitor):
             node_law = node
             while 'parent' in node_law and node_law['type'] != tree.TYPE_EDIT:
                 node_law = node_law['parent']
-            node_law = tree.filter_nodes(node_law, lambda x: x['type'] in [tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])[0]
-        node['filename'] = os.path.join(node_law['repository'], 'Article_' + node['id'].replace(' ', '_') + '.md')
+            node_law = tree.filter_nodes(node_law, lambda x: x['type'] in [tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
+            if len(node_law):
+                node_law = node_law[0]
+            else:
+                node_law = None
+        if node_law:
+            node['filename'] = os.path.join(node_law['repository'], 'Article_' + node['id'].replace(' ', '_') + '.md')
 
     def visit_code_reference_node(self, node, post):
         if post:

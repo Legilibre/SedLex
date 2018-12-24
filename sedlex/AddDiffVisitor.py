@@ -38,7 +38,7 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
-        end = self.end if self.end >= 0 else self.end + len(content)+1
+        end = self.end if self.end >= 0 or old_content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
@@ -93,7 +93,7 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
-        end = self.end if self.end >= 0 else self.end + len(content)+1
+        end = self.end if self.end >= 0 or old_content == None else self.end + len(content)+1
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
@@ -109,7 +109,8 @@ class AddDiffVisitor(AbstractVisitor):
     def visit_article_reference_node(self, node, post):
         if post:
             return
-        self.set_content_from_file(node['filename'])
+        if 'filename' in node:
+            self.set_content_from_file(node['filename'])
 
     def visit_bill_article_reference_node(self, node, post):
         bill_article = tree.filter_nodes(
@@ -122,7 +123,8 @@ class AddDiffVisitor(AbstractVisitor):
     def visit_article_definition_node(self, node, post):
         if post:
             return
-        self.set_content_from_file(node['filename'])
+        if 'filename' in node:
+            self.set_content_from_file(node['filename'])
 
     def set_content_from_file(self, filename):
         self.filename = filename
@@ -159,10 +161,10 @@ class AddDiffVisitor(AbstractVisitor):
             return
 
         filename = 'unnamed article'
-        if article_reference_node:
+        if article_reference_node and 'filename' in article_reference_node[0]:
             filename = article_reference_node[0]['filename']
             id = article_reference_node[0]['id']
-        elif article_definition_node:
+        elif article_definition_node and 'filename' in article_definition_node[0]:
             filename = article_definition_node[0]['filename']
             id = article_definition_node[0]['id']
 
@@ -180,7 +182,7 @@ class AddDiffVisitor(AbstractVisitor):
         new_content = old_content
         new_words = None
         diff = (None, None, None)
-        end = self.end if self.end >= 0 else self.end + len(old_content)+1
+        end = self.end if self.end >= 0 or old_content == None else self.end + len(old_content)+1
 
         try:
             if node['editType'] in ['replace', 'edit']:
