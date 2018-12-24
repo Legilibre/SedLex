@@ -38,7 +38,7 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
-        end = self.end if self.end >= 0 or old_content == None else self.end + len(content)+1
+        end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
@@ -93,7 +93,7 @@ class AddDiffVisitor(AbstractVisitor):
             content = self.text
         else:
             raise ValueError
-        end = self.end if self.end >= 0 or old_content == None else self.end + len(content)+1
+        end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
             words = node['children'][0]['words'].strip()
