@@ -29,6 +29,7 @@ class AddDiffVisitor(AbstractVisitor):
         self.begin = 0
         self.end = -1
         self.text = text
+        self.editType = None
         super(AddDiffVisitor, self).__init__()
 
     def compute_location(self, type, typestring, node):
@@ -40,10 +41,13 @@ class AddDiffVisitor(AbstractVisitor):
             raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
-        if 'position' in node and node['position'] == 'after':
+        if ('position' in node and node['position'] == 'after') or (self.editType == 'add' and 'position' not in node):
             if node['order'] < 0:
                 node['order'] += len(match)+1
-            if node['order'] >= len(match):
+            if node['order'] == len(match) and self.editType == 'add':
+                self.begin = self.end
+                return
+            elif node['order'] > len(match):
                 node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(node['order'])+' >= len(match) == '+str(len(match))
                 return
             match = match[node['order']]
@@ -51,7 +55,10 @@ class AddDiffVisitor(AbstractVisitor):
         else:
             if node['order'] < 0:
                 node['order'] += len(match)+1
-            if node['order'] - 1 >= len(match):
+            if node['order'] - 1 == len(match) and self.editType == 'add':
+                self.begin = self.end
+                return
+            elif node['order'] - 1 > len(match):
                 node['error'] = '[SedLex] visit_'+typestring+'_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
                 return
             match = match[node['order'] - 1]
@@ -146,6 +153,7 @@ class AddDiffVisitor(AbstractVisitor):
             self.content = {}
             self.begin = 0
             self.end = -1
+            self.editType = node['editType']
             return
 
         article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
@@ -288,6 +296,7 @@ class AddDiffVisitor(AbstractVisitor):
         except Exception as e:
             # FIXME: proper error message
             raise e
+        self.editType = None
 
 def typography(old_content, new_words, begin, end):
 
