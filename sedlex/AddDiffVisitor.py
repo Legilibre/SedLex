@@ -44,29 +44,28 @@ class AddDiffVisitor(AbstractVisitor):
         if s != None:
             self.begin += len(s.group(0))
             match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
+        order = node['order']
+        if order < 0:
+            order += len(match)+1
         if 'position' in node and node['position'] == 'after':
-            if node['order'] < 0:
-                node['order'] += len(match)+1
-            if node['order'] == len(match):
+            if order == len(match):
                 self.begin = self.end
                 return
-            elif node['order'] > len(match):
-                node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(node['order'])+' >= len(match) == '+str(len(match))
+            elif order > len(match):
+                node['error'] = '[SedLex] visit_alinea_reference_node: node[\'order\'] == '+str(order)+' >= len(match) == '+str(len(match))
                 return
-            match = match[node['order']]
+            match = match[order]
             self.begin += match.start()
             if node['type'] in [tree.TYPE_WORD_REFERENCE, tree.TYPE_SENTENCE_REFERENCE]:
                 self.end = self.begin
         else:
-            if node['order'] < 0:
-                node['order'] += len(match)+1
-            if node['order'] - 1 == len(match):
+            if order - 1 == len(match):
                 self.begin = self.end
                 return
-            elif node['order'] - 1 > len(match):
-                node['error'] = '[SedLex] visit_'+typestring+'_node: node[\'order\']-1 == '+str(node['order'])+'-1 >= len(match) == '+str(len(match))
+            elif order - 1 > len(match):
+                node['error'] = '[SedLex] visit_'+typestring+'_node: node[\'order\']-1 == '+str(order)+'-1 >= len(match) == '+str(len(match))
                 return
-            match = match[node['order'] - 1]
+            match = match[order - 1]
             self.begin += match.start()
             self.end = self.begin + len(match.group(1))
 
