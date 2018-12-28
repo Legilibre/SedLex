@@ -29,7 +29,6 @@ class AddDiffVisitor(AbstractVisitor):
         self.begin = 0
         self.end = -1
         self.text = text
-        self.editType = None
         super(AddDiffVisitor, self).__init__()
 
     def compute_location(self, type, typestring, node):
@@ -41,10 +40,10 @@ class AddDiffVisitor(AbstractVisitor):
             raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
-        if ('position' in node and node['position'] == 'after') or (self.editType == 'add' and 'position' not in node):
+        if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
                 node['order'] += len(match)+1
-            if node['order'] == len(match) and self.editType == 'add':
+            if node['order'] == len(match):
                 self.begin = self.end
                 return
             elif node['order'] > len(match):
@@ -52,10 +51,12 @@ class AddDiffVisitor(AbstractVisitor):
                 return
             match = match[node['order']]
             self.begin += match.start()
+            if node['type'] in [tree.TYPE_WORD_REFERENCE, tree.TYPE_SENTENCE_REFERENCE]:
+                self.end = self.begin
         else:
             if node['order'] < 0:
                 node['order'] += len(match)+1
-            if node['order'] - 1 == len(match) and self.editType == 'add':
+            if node['order'] - 1 == len(match):
                 self.begin = self.end
                 return
             elif node['order'] - 1 > len(match):
@@ -153,7 +154,6 @@ class AddDiffVisitor(AbstractVisitor):
             self.content = {}
             self.begin = 0
             self.end = -1
-            self.editType = node['editType']
             return
 
         article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
@@ -214,8 +214,8 @@ class AddDiffVisitor(AbstractVisitor):
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_words = def_node['words'] + old_content[self.begin:end]
-                    diff = (self.begin, None, def_node['words'])
+                    new_words = old_content[self.begin:end] + def_node['words']
+                    diff = (end, None, def_node['words'])
                 elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
                     new_words = old_content[self.begin:end] + ' ' + def_node['words']
                     diff = (end, None, def_node['words'])
@@ -296,7 +296,6 @@ class AddDiffVisitor(AbstractVisitor):
         except Exception as e:
             # FIXME: proper error message
             raise e
-        self.editType = None
 
 def typography(old_content, new_words, begin, end):
 
