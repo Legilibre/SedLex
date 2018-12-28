@@ -40,6 +40,10 @@ class AddDiffVisitor(AbstractVisitor):
             raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
+        s = re.match('^(" *|« *)((Art\. (.*?)\.?|[IVXCLDM]+ *(bis|ter|quater|quinquies|sexies|septies|octies|nonies)?\.?|\d+°? *\.?) +[-‐‑‒–—―] +|[a-z]+\))', content[self.begin:end])
+        if s != None:
+            self.begin += len(s.group(0))
+            match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
         if 'position' in node and node['position'] == 'after':
             if node['order'] < 0:
                 node['order'] += len(match)+1
