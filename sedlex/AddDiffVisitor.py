@@ -117,6 +117,7 @@ class AddDiffVisitor(AbstractVisitor):
                     raise Exception('words not found in "'+content[self.begin:self.begin+10]+'…'+content[end-10:end]+'"')
             if 'position' in node and node['position'] == 'after':
                 self.begin += content[self.begin:end].lower().find(words.lower()) + len(words)
+                self.end = self.begin
             else:
                 self.begin += content[self.begin:end].lower().find(words.lower())
                 self.end = self.begin + len(words)
