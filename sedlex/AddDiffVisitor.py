@@ -68,6 +68,9 @@ class AddDiffVisitor(AbstractVisitor):
             match = match[order - 1]
             self.begin += match.start()
             self.end = self.begin + len(match.group(1))
+            # Remove full stop from the selection
+            if node['type'] == tree.TYPE_SENTENCE_REFERENCE:
+                self.end -= 1
 
     def visit_alinea_reference_node(self, node, post):
         if post:
