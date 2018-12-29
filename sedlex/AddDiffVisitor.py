@@ -213,8 +213,8 @@ class AddDiffVisitor(AbstractVisitor):
                 new_words = def_node['children'][0]['words']
                 diff = (self.begin, old_content[self.begin:end], new_words)
             elif node['editType'] == 'delete':
-                art_ref_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
-                other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE])
+                art_ref_node = parser.filter_nodes(node, lambda x: x['type'] in [tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_BILL_ARTICLE_REFERENCE])
+                other_ref_nodes = parser.filter_nodes(node, lambda x: x['type'] not in [tree.TYPE_EDIT, tree.TYPE_ARTICLE_REFERENCE, tree.TYPE_CODE_REFERENCE, tree.TYPE_LAW_REFERENCE, tree.TYPE_LAW_PROJECT, tree.TYPE_LAW_PROPOSAL, tree.TYPE_BILL_ARTICLE_REFERENCE])
                 if art_ref_node and not other_ref_nodes:
                     new_content = None
                 else:
