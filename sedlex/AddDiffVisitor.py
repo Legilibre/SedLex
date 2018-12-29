@@ -23,21 +23,23 @@ class AddDiffVisitor(AbstractVisitor):
         tree.TYPE_WORD_REFERENCE        : re.compile(r'(\b\w.*?\b)', re.UNICODE)
     }
 
-    def __init__(self, text=None):
-        self.filename = ''
+    def __init__(self):
         self.content = {}
+        self.bill_article = None
+        self.is_amendment = False
         self.begin = 0
         self.end = -1
-        self.text = text
         super(AddDiffVisitor, self).__init__()
 
     def compute_location(self, type, typestring, node):
-        if self.filename in self.content:
-            content = self.content[self.filename]
-        elif self.text:
-            content = self.text
+        if len(self.content.values()) == 1:
+            content = list(self.content.values())[0]
         else:
-            raise ValueError
+            if len(self.content.values()) == 0:
+                node['error'] = '[SedLex] missing text in visit_' + typestring + '_node'
+                raise Exception('missing text of the article')
+            else:
+                raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
         s = re.match('^(" *|« *)((Art\. (.*?)\.?|[IVXCLDM]+ *(bis|ter|quater|quinquies|sexies|septies|octies|nonies)?\.?|\d+°? *\.?) +[-‐‑‒–—―] +|[a-z]+\))', content[self.begin:end])
@@ -101,12 +103,14 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
 
-        if self.filename in self.content:
-            content = self.content[self.filename]
-        elif self.text:
-            content = self.text
+        if len(self.content.values()) == 1:
+            content = list(self.content.values())[0]
         else:
-            raise ValueError
+            if len(self.content.values()) == 0:
+                node['error'] = '[SedLex] missing text in visit_words_reference_node'
+                raise Exception('missing text of the article')
+            else:
+                raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
 
         if 'children' in node and node['children'][0]['type'] == 'quote':
@@ -130,6 +134,18 @@ class AddDiffVisitor(AbstractVisitor):
         if 'filename' in node:
             self.set_content_from_file(node['filename'])
 
+    def visit_bill_article_node(self, node, post):
+        if post:
+            self.bill_article = None
+        else:
+            self.bill_article = (node['order'], node['content'])
+
+    def visit_amendment_node(self, node, post):
+        if post:
+            self.is_amendment = False
+        else:
+            self.is_amendment = True
+
     def visit_bill_article_reference_node(self, node, post):
         bill_article = tree.filter_nodes(
             tree.get_root(node),
@@ -145,13 +161,12 @@ class AddDiffVisitor(AbstractVisitor):
             self.set_content_from_file(node['filename'])
 
     def set_content_from_file(self, filename):
-        self.filename = filename
-        if self.filename not in self.content:
-            if os.path.isfile(self.filename):
-                input_file = codecs.open(self.filename, mode="r", encoding="utf-8")
-                self.set_content(self.filename, input_file.read())
+        if filename not in self.content:
+            if os.path.isfile(filename):
+                input_file = codecs.open(filename, mode="r", encoding="utf-8")
+                self.set_content(filename, input_file.read())
             else:
-                self.set_content(self.filename, '')
+                self.set_content(filename, '')
 
     def set_content(self, key, content):
         self.content[key] = content
@@ -160,10 +175,11 @@ class AddDiffVisitor(AbstractVisitor):
 
     def visit_edit_node(self, node, post):
         if not post:
-            self.filename = ''
             self.content = {}
             self.begin = 0
             self.end = -1
+            if self.is_amendment and self.bill_article:
+                self.set_content(self.bill_article[0], self.bill_article[1])
             return
 
         article_reference_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_ARTICLE_REFERENCE)
@@ -171,7 +187,7 @@ class AddDiffVisitor(AbstractVisitor):
         editTypeArticle = 'edit'
         if node['editType'] == 'add' and len(article_definition_node):
             editTypeArticle = 'add'
-        if not article_reference_node and not self.text and editTypeArticle == 'edit':
+        if not article_reference_node and len(self.content.values()) == 0 and editTypeArticle == 'edit':
             node['error'] = '[SedLex] visit_edit_node: no article reference node'
             return
         if len(article_reference_node) > 1:
@@ -187,13 +203,14 @@ class AddDiffVisitor(AbstractVisitor):
             id = article_definition_node[0]['id']
 
         if editTypeArticle == 'edit':
-            if filename in self.content:
-                old_content = self.content[filename]
-            elif self.text:
-                old_content = self.text
+            if len(self.content.values()) == 1:
+                old_content = list(self.content.values())[0]
             else:
-                node['error'] = '[SedLex] visit_edit_node: filename == '+filename+' should have been read'
-                return
+                if len(self.content.values()) == 0:
+                    node['error'] = '[SedLex] missing text in visit_edit_node'
+                    raise Exception('missing text of the article')
+                else:
+                    raise ValueError
         else:
             old_content = None
 
