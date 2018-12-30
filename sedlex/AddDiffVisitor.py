@@ -132,7 +132,10 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
         if 'filename' in node:
-            self.set_content_from_file(node['filename'])
+            if 'content' in node:
+                self.set_content(node['filename'], node['content'])
+            else:
+                self.set_content_from_file(node['filename'], node)
 
     def visit_bill_article_node(self, node, post):
         if post:
@@ -158,14 +161,18 @@ class AddDiffVisitor(AbstractVisitor):
         if post:
             return
         if 'filename' in node:
-            self.set_content_from_file(node['filename'])
+            if 'content' in node:
+                self.set_content(node['filename'], node['content'])
+            else:
+                self.set_content_from_file(node['filename'], node)
 
-    def set_content_from_file(self, filename):
+    def set_content_from_file(self, filename, node):
         if filename not in self.content:
             if os.path.isfile(filename):
                 input_file = codecs.open(filename, mode="r", encoding="utf-8")
                 self.set_content(filename, input_file.read())
             else:
+                node['error'] = '[SedLex] file not found'
                 self.set_content(filename, '')
 
     def set_content(self, key, content):
