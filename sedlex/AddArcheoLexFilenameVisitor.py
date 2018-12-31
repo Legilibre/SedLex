@@ -45,7 +45,7 @@ class AddArcheoLexFilenameVisitor(AbstractVisitor):
                 node_law = None
         if node_law and 'repository' in node_law:
             node['filename'] = os.path.join(node_law['repository'], 'Article_' + node['id'].replace(' ', '_') + '.md')
-        if 'filename' in node_law and node_law['filename'] in self.content:
+        if node_law and 'filename' in node_law and node_law['filename'] in self.content:
             content = re.search(r'\n\n#+ Article ' + node['id'] + '\n\n([^\n]*(\n([^\n]+|(\n[^#]*)))*)', '\n\n' + self.content[node_law['filename']])
             if content:
                 node['content'] = content.group(1).strip()
