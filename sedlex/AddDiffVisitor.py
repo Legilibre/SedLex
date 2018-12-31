@@ -70,9 +70,6 @@ class AddDiffVisitor(AbstractVisitor):
             match = match[order - 1]
             self.begin += match.start()
             self.end = self.begin + len(match.group(1))
-            # Remove full stop from the selection
-            if node['type'] == tree.TYPE_SENTENCE_REFERENCE:
-                self.end -= 1
 
     def visit_alinea_reference_node(self, node, post):
         if post:
@@ -248,8 +245,12 @@ class AddDiffVisitor(AbstractVisitor):
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
-                    new_words = old_content[self.begin:end] + def_node['words']
-                    diff = (end, None, def_node['words'])
+                    if old_content[self.begin:end] and old_content[end-1:end] == '.':
+                        new_words = old_content[self.begin:end-1] + def_node['words'] + old_content[end-1]
+                        diff = (end-1, None, def_node['words'])
+                    else:
+                        new_words = old_content[self.begin:end] + def_node['words']
+                        diff = (end, None, def_node['words'])
                 elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
                     new_words = old_content[self.begin:end] + ' ' + def_node['words']
                     diff = (end, None, def_node['words'])
