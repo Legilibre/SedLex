@@ -23,12 +23,14 @@ class AddDiffVisitor(AbstractVisitor):
         tree.TYPE_WORD_REFERENCE        : re.compile(r'(\b\w.*?\b)', re.UNICODE)
     }
 
-    def __init__(self):
+    def __init__(self, computeDiff=True, computeExactDiff=True):
         self.content = {}
         self.bill_article = None
         self.is_amendment = False
         self.begin = 0
         self.end = -1
+        self.computeDiff = computeDiff
+        self.computeExactDiff = computeExactDiff
         super(AddDiffVisitor, self).__init__()
 
     def compute_location(self, type, typestring, node):
@@ -287,19 +289,20 @@ class AddDiffVisitor(AbstractVisitor):
                     new_content_bis, left_bis, new_words_bis, right_bis, begin_bis, end_bis = typography(old_content, diff[2], diff[0], diff[0])
                     diff = (begin_bis, old_content[begin_bis:end_bis], new_words_bis)
 
-            old_content_list = old_content.splitlines() if old_content else []
-            new_content_list = new_content.splitlines() if new_content else []
-            unified_diff = difflib.unified_diff(
-                old_content_list,
-                new_content_list,
-                tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
-                fromfile='\"' + filename + '\"' if old_content != None else '/dev/null'
-            )
-            unified_diff = list(unified_diff)
-            if len(unified_diff) > 0:
-                node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
-                #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
-            if diff[1] or diff[2]:
+            if self.computeDiff:
+                old_content_list = old_content.splitlines() if old_content else []
+                new_content_list = new_content.splitlines() if new_content else []
+                unified_diff = difflib.unified_diff(
+                    old_content_list,
+                    new_content_list,
+                    tofile='\"' + filename + '\"' if new_content != None else '/dev/null',
+                    fromfile='\"' + filename + '\"' if old_content != None else '/dev/null'
+                )
+                unified_diff = list(unified_diff)
+                if len(unified_diff) > 0:
+                    node['diff'] = ('\n'.join(unified_diff)).replace('\n\n', '\n') # investigate why double newlines
+                    #node['htmlDiff'] = diff.make_html_rich_diff(old_content, new_content, self.filename)
+            if self.computeExactDiff and (diff[1] or diff[2]):
                 node['exactDiff'] = '--- ' + ('"' + filename + '"' if old_content != None else '/dev/null') + '\n' + \
                                     '+++ ' + ('"' + filename + '"' if new_content != None else '/dev/null') + '\n'
                 if diff[0] < 0:
