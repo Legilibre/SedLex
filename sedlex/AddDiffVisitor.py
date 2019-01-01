@@ -44,10 +44,13 @@ class AddDiffVisitor(AbstractVisitor):
                 raise ValueError
         end = self.end if self.end >= 0 or content == None else self.end + len(content)+1
         match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
-        s = re.match('^(" *|« *)?((Art\. (.*?)\.?|[IVXCLDM]+ *(bis|ter|quater|quinquies|sexies|septies|octies|nonies)?\.?) +[-‐‑‒–—―] +|[a-z]+\) *|\d+° *\)? *)', content[self.begin:end])
-        if s != None:
-            self.begin += len(s.group(0))
-            match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
+        if type == tree.TYPE_SENTENCE_REFERENCE:
+            s = re.match('^(" *|« *)?((Art\. (.*?)\.?|[IVXCLDM]+ *(bis|ter|quater|quinquies|sexies|septies|octies|nonies)?\.?) +[-‐‑‒–—―] +|[a-z]+\) *|\d+° *\)? *)', content[self.begin:end])
+            if s != None:
+                self.begin += len(s.group(0))
+                match = list(re.finditer(AddDiffVisitor.REGEXP[type], content[self.begin:end]))
+            if len(match) == 0:
+                match = list(re.finditer('(.*)', content[self.begin:end]))
         order = node['order']
         if order < 0:
             order += len(match)+1
@@ -338,9 +341,9 @@ class AddDiffVisitor(AbstractVisitor):
 def typography(old_content, new_words, begin, end):
 
     if not new_words:
-        if old_content[begin-1:begin] == ' ' and old_content[end:end+1] == ' ':
+        if begin > 0 and old_content[begin-1:begin] == ' ' and (end == len(old_content) or old_content[end:end+1] in [' ', '\n']):
             return old_content[:begin-1] + old_content[end:], old_content[:begin-1], '', old_content[end:], begin-1, end
-        elif old_content[begin-1:begin] == '\n' and old_content[end:end+1] == ' ':
+        elif (begin == 0 or old_content[begin-1:begin] == '\n') and old_content[end:end+1] == ' ':
             return old_content[:begin] + old_content[end+1:], old_content[:begin], '', old_content[end+1:], begin, end+1
         return old_content[:begin] + old_content[end:], old_content[:begin], '', old_content[end:], begin, end
 
