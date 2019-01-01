@@ -248,8 +248,11 @@ class AddDiffVisitor(AbstractVisitor):
                 diff = (self.begin, old_content[self.begin:end], None)
             elif node['editType'] == 'add':
                 def_node = parser.filter_nodes(node, lambda x: x['type'] == tree.TYPE_QUOTE)[-1]
+                if not def_node['words']:
+                    raise Exception('Empty words to be added')
                 # add a word
                 if node['children'][1]['type'] == tree.TYPE_WORD_DEFINITION:
+                    # typography: add the new words before the full stop
                     if old_content[self.begin:end] and old_content[end-1:end] == '.':
                         new_words = old_content[self.begin:end-1] + def_node['words'] + old_content[end-1]
                         diff = (end-1, None, def_node['words'])
@@ -257,6 +260,9 @@ class AddDiffVisitor(AbstractVisitor):
                         new_words = old_content[self.begin:end] + def_node['words']
                         diff = (end, None, def_node['words'])
                 elif node['children'][1]['type'] == tree.TYPE_SENTENCE_DEFINITION:
+                    # typography: ensure the sentence is terminated by a full stop
+                    if def_node['words'][-1] != '.':
+                        def_node['words'] += '.'
                     new_words = old_content[self.begin:end] + ' ' + def_node['words']
                     diff = (end, None, def_node['words'])
                 # add an alinea
