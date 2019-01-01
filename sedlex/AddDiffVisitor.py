@@ -282,9 +282,9 @@ class AddDiffVisitor(AbstractVisitor):
                         filename = re.sub(r'Article_(.*)\.md$', 'Article_'+id+'.md', filename)
                         old_content = None
             if new_words != None:
-                new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, self.end)
+                new_content, left, new_words, right, self.begin, self.end = typography(old_content, new_words, self.begin, end)
                 if diff[1]:
-                    diff = (self.begin, old_content[self.begin:end], new_words)
+                    diff = (self.begin, old_content[self.begin:self.end], new_words)
                 elif old_content != None:
                     new_content_bis, left_bis, new_words_bis, right_bis, begin_bis, end_bis = typography(old_content, diff[2], diff[0], diff[0])
                     diff = (begin_bis, old_content[begin_bis:end_bis], new_words_bis)
@@ -336,6 +336,13 @@ class AddDiffVisitor(AbstractVisitor):
             raise e
 
 def typography(old_content, new_words, begin, end):
+
+    if not new_words:
+        if old_content[begin-1:begin] == ' ' and old_content[end:end+1] == ' ':
+            return old_content[:begin-1] + old_content[end:], old_content[:begin-1], '', old_content[end:], begin-1, end
+        elif old_content[begin-1:begin] == '\n' and old_content[end:end+1] == ' ':
+            return old_content[:begin] + old_content[end+1:], old_content[:begin], '', old_content[end+1:], begin, end+1
+        return old_content[:begin] + old_content[end:], old_content[:begin], '', old_content[end:], begin, end
 
     # Replace simple newlines by double newlines (Markdown syntax for new paragraphs)
     new_words = re.sub(r'(^|[^\n])\n([^\n]|$)', r'\1\n\n\2', new_words.strip(' '))
