@@ -380,11 +380,11 @@ def typography(old_content, new_words, begin, end):
             left = old_content[:begin]
 
     # Add a sigle space before or after the introduced words depending if we have two letters or point/comma/colon/semicolon + letter
-    if new_words and right and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°)!?‐‑‒–—―-]+$', new_words[-1]+right[0], flags=re.IGNORECASE):
+    if new_words and right and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°«»)!?‐‑‒–—―-]+$', new_words[-1]+right[0], flags=re.IGNORECASE):
         new_words = new_words+' '
-    if new_words and left and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°)!?‐‑‒–—―-]+$', left[-1]+new_words[0], flags=re.IGNORECASE):
+    if new_words and left and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°«»)!?‐‑‒–—―-]+$', left[-1]+new_words[0], flags=re.IGNORECASE):
         new_words = ' '+new_words
-    if not new_words and right and left and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°)!?‐‑‒–—―-]+$', left[-1]+right[0], flags=re.IGNORECASE):
+    if not new_words and right and left and re.match(r'^[.,:;!?]?[0-9a-záàâäéèêëíìîïóòôöøœúùûüýỳŷÿ°«»)!?‐‑‒–—―-]+$', left[-1]+right[0], flags=re.IGNORECASE):
         new_words = ' '+new_words
 
     # Transfer spaces to old_content if common with the new_words to minimise the length of new_words
