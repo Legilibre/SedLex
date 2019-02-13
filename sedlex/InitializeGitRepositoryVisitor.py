@@ -4,7 +4,7 @@ from duralex.AbstractVisitor import AbstractVisitor
 
 import duralex.tree
 
-import template
+from . import template
 
 import subprocess
 import os

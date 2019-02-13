@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from duralex.AbstractVisitor import AbstractVisitor
-import template
+from . import template
 
 from duralex.alinea_parser import *
 

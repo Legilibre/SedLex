@@ -6,7 +6,7 @@ from duralex.alinea_parser import *
 
 from github import Github
 
-import template
+from . import template
 
 class AddGitHubIssueVisitor(AbstractVisitor):
     def __init__(self, args):
