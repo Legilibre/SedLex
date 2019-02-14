@@ -7,7 +7,7 @@ import sys
 import os
 
 import duralex.alinea_parser as parser
-import diff
+from . import diff
 
 from duralex.AbstractVisitor import AbstractVisitor
 

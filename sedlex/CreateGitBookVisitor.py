@@ -2,8 +2,8 @@
 
 from duralex.AbstractVisitor import AbstractVisitor
 from .AddCommitMessageVisitor import int_to_roman
-import template
-import diff
+from . import template
+from . import diff
 
 from duralex.alinea_parser import *
 import duralex.tree as tree
